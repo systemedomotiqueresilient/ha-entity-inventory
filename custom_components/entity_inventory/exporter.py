@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from enum import Enum
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -30,11 +31,16 @@ from .const import (
     CONF_INCLUDE_CONFIG,
     CONF_INCLUDE_DIAGNOSTIC,
     CONF_OUTPUT_PATH,
+    CONF_REDACT_EMAILS,
     DEFAULT_INCLUDE_CONFIG,
     DEFAULT_INCLUDE_DIAGNOSTIC,
     DEFAULT_OUTPUT_PATH,
+    DEFAULT_REDACT_EMAILS,
+    DOMAIN,
     STATIC_ATTRIBUTES,
 )
+
+EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 
 HEADER = """\
 # Inventaire Home Assistant — généré par l'intégration Entity Inventory.
@@ -56,6 +62,8 @@ HEADER = """\
 #  - L'export peut être FILTRÉ (voir meta.filters et meta.counts.excluded) : une entité
 #    absente d'ici peut exister. Ne jamais inventer d'entity_id.
 #  - Les entités désactivées ne sont pas listées : elles n'existent pas à l'exécution.
+#  - "integration" absent = intégration de l'appareil, ou celle du domaine de l'entity_id.
+#  - "[email]" dans un nom = adresse e-mail masquée (l'entity_id, lui, reste exact).
 
 """
 
@@ -70,6 +78,7 @@ def export_options(entry: ConfigEntry) -> dict[str, Any]:
         CONF_EXCLUDED_INTEGRATIONS: sorted(
             entry.options.get(CONF_EXCLUDED_INTEGRATIONS) or []
         ),
+        CONF_REDACT_EMAILS: entry.options.get(CONF_REDACT_EMAILS, DEFAULT_REDACT_EMAILS),
     }
 
 
@@ -173,6 +182,17 @@ def async_build_inventory(
     include_config = options.get(CONF_INCLUDE_CONFIG, DEFAULT_INCLUDE_CONFIG)
     include_diagnostic = options.get(CONF_INCLUDE_DIAGNOSTIC, DEFAULT_INCLUDE_DIAGNOSTIC)
     excluded_integrations = set(options.get(CONF_EXCLUDED_INTEGRATIONS) or ())
+    redact_emails = options.get(CONF_REDACT_EMAILS, DEFAULT_REDACT_EMAILS)
+
+    def _txt(value: str | None) -> str | None:
+        """Espaces normalisés (noms « ' Switch Sensor' ») et e-mails masqués."""
+        if not value:
+            return value
+        value = " ".join(str(value).split())
+        return EMAIL_RE.sub("[email]", value) if redact_emails else value
+
+    def _txts(values: Any) -> list[str]:
+        return [_txt(v) for v in _aliases(values)]
 
     area_reg = ar.async_get(hass)
     floor_reg = fr.async_get(hass)
@@ -187,13 +207,13 @@ def async_build_inventory(
         floors_by_id.values(),
         key=lambda f: (f.level if f.level is not None else 999, f.name.casefold()),
     ):
-        item: dict[str, Any] = {"name": floor.name}
+        item: dict[str, Any] = {"name": _txt(floor.name)}
         _set(item, "level", floor.level)
-        _set(item, "aliases", _aliases(floor.aliases))
+        _set(item, "aliases", _txts(floor.aliases))
         floors[floor.floor_id] = item
 
     labels = {
-        label.label_id: label.name
+        label.label_id: _txt(label.name)
         for label in sorted(label_reg.async_list_labels(), key=lambda l: l.name.casefold())
     }
 
@@ -205,9 +225,9 @@ def async_build_inventory(
 
     areas: dict[str, dict[str, Any]] = {}
     for area in sorted(area_reg.async_list_areas(), key=_area_sort):
-        item = {"name": area.name}
+        item = {"name": _txt(area.name)}
         _set(item, "floor", area.floor_id)
-        _set(item, "aliases", _aliases(area.aliases))
+        _set(item, "aliases", _txts(area.aliases))
         _set(item, "labels", area.labels)
         areas[area.id] = item
 
@@ -241,6 +261,9 @@ def async_build_inventory(
             disabled_count += 1
             continue
 
+        if entry.platform == DOMAIN:  # le bouton de cette intégration : sans intérêt
+            continue
+
         device = dev_reg.async_get(entry.device_id) if entry.device_id else None
         device_integration = _device_integration(device) if device else None
         if excluded_integrations & {entry.platform, device_integration}:
@@ -266,7 +289,7 @@ def async_build_inventory(
         _set(
             item,
             "name",
-            _short_name(full_name, _device_name(device)) if device else full_name,
+            _short_name(_txt(full_name), _txt(_device_name(device))) if device else _txt(full_name),
         )
         _set(item, "device_class", device_class)
         _set(
@@ -277,7 +300,7 @@ def async_build_inventory(
         _set(item, "category", category)
         if entry.hidden_by:
             item["hidden"] = True
-        _set(item, "aliases", _aliases(entry.aliases))
+        _set(item, "aliases", _txts(entry.aliases))
         _set(item, "labels", entry.labels)
         item.update(_capabilities(entry.capabilities, attributes))
         entity_count += 1
@@ -289,7 +312,8 @@ def async_build_inventory(
                 item["area"] = entry.area_id
             entities_by_device.setdefault(device.id, []).append(item)
         else:
-            item["integration"] = entry.platform
+            if entry.platform != entry.domain:
+                item["integration"] = entry.platform
             _bucket(entry.area_id).setdefault("entities", []).append(item)
 
     # --- Appareils (seulement ceux qui ont des entités actives) ----------- #
@@ -298,7 +322,7 @@ def async_build_inventory(
         device_entities = entities_by_device.get(device.id)
         if not device_entities:
             continue
-        item = {"name": _device_name(device)}
+        item = {"name": _txt(_device_name(device))}
         _set(item, "manufacturer", device.manufacturer)
         _set(item, "model", device.model)
         _set(item, "integration", _device_integration(device))
@@ -313,7 +337,7 @@ def async_build_inventory(
         if ent_reg.async_get(state.entity_id) is not None:
             continue
         item = {"id": state.entity_id}
-        _set(item, "name", state.attributes.get("friendly_name"))
+        _set(item, "name", _txt(state.attributes.get("friendly_name")))
         _set(item, "device_class", state.attributes.get("device_class"))
         _set(item, "unit", state.attributes.get("unit_of_measurement"))
         item.update(_capabilities(None, state.attributes))
@@ -335,6 +359,7 @@ def async_build_inventory(
             "config_entities": "included" if include_config else "excluded",
             "diagnostic_entities": "included" if include_diagnostic else "excluded",
             "always_kept_device_classes": sorted(ALWAYS_KEEP_DEVICE_CLASSES),
+            "emails_in_names": "redacted" if redact_emails else "kept",
             "excluded_integrations": sorted(excluded_integrations),
         },
         "counts": {

@@ -26,9 +26,11 @@ from .const import (
     CONF_INCLUDE_CONFIG,
     CONF_INCLUDE_DIAGNOSTIC,
     CONF_OUTPUT_PATH,
+    CONF_REDACT_EMAILS,
     DEFAULT_INCLUDE_CONFIG,
     DEFAULT_INCLUDE_DIAGNOSTIC,
     DEFAULT_OUTPUT_PATH,
+    DEFAULT_REDACT_EMAILS,
     DOMAIN,
 )
 from .exporter import is_forbidden_path
@@ -38,6 +40,7 @@ DEFAULTS: dict[str, Any] = {
     CONF_INCLUDE_CONFIG: DEFAULT_INCLUDE_CONFIG,
     CONF_INCLUDE_DIAGNOSTIC: DEFAULT_INCLUDE_DIAGNOSTIC,
     CONF_EXCLUDED_INTEGRATIONS: [],
+    CONF_REDACT_EMAILS: DEFAULT_REDACT_EMAILS,
 }
 
 
@@ -67,6 +70,9 @@ def _schema(hass: HomeAssistant, values: dict[str, Any]) -> vol.Schema:
                     mode=SelectSelectorMode.DROPDOWN,
                 )
             ),
+            vol.Required(
+                CONF_REDACT_EMAILS, default=values[CONF_REDACT_EMAILS]
+            ): BooleanSelector(),
         }
     )
 

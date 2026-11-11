@@ -11,8 +11,10 @@ SERVICE_EXPORT = "export"
 CONF_INCLUDE_CONFIG = "include_config"
 CONF_INCLUDE_DIAGNOSTIC = "include_diagnostic"
 CONF_EXCLUDED_INTEGRATIONS = "excluded_integrations"
+CONF_REDACT_EMAILS = "redact_emails"
 DEFAULT_INCLUDE_CONFIG = False
 DEFAULT_INCLUDE_DIAGNOSTIC = False
+DEFAULT_REDACT_EMAILS = True
 
 # Gardées même quand leur catégorie est exclue (utiles aux automatisations)
 ALWAYS_KEEP_DEVICE_CLASSES: frozenset[str] = frozenset({"battery"})
@@ -34,7 +36,6 @@ STATIC_ATTRIBUTES: tuple[str, ...] = (
     "min",
     "max",
     "step",
-    "mode",  # input_number / number / input_text
     "supported_color_modes",
     "min_color_temp_kelvin",
     "max_color_temp_kelvin",

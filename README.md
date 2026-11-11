@@ -41,11 +41,12 @@ Copier `custom_components/entity_inventory/` dans `/config/custom_components/` e
 |---|---|---|
 | Inclure les entités de configuration | non | calibrations, mode LED, boutons « vérifier la mise à jour »… |
 | Inclure les entités de diagnostic | non | signal, LQI, tension, dernière vue… — **les batteries sont toujours gardées** |
-| Intégrations à exclure | aucune | ex. `proxmoxve`, `sentinel` : aucune de leurs entités n'est exportée |
+| Intégrations à exclure | aucune | ex. `proxmoxve`, `sentinel`, `sentinel_report` : aucune de leurs entités n'est exportée |
+| Masquer les adresses e-mail | oui | toute adresse présente dans un nom devient `[email]` |
 
 Le fichier indique dans `meta.filters` et `meta.counts.excluded` ce qui a été filtré : l'IA sait qu'une entité absente peut exister. Les entités désactivées ne sont jamais listées (seulement comptées).
 
-Ordre de grandeur sur une installation réelle de 2 400 entités : **470 Ko → 175 Ko** (≈ 146k → 54k tokens) avec les filtres par défaut.
+Ordre de grandeur sur une installation réelle de 2 400 entités : **470 Ko → 170 Ko** (≈ 146k → 55k tokens) avec les filtres par défaut, **≈ 137 Ko** (≈ 42k tokens) en excluant en plus les intégrations de surveillance.
 
 Tout se modifie ensuite via *Configurer*.
 
@@ -94,12 +95,12 @@ no_registry:   # entités YAML sans unique_id
 |---|---|
 | entity_id, nom, pièce, étage, étiquettes, alias | états courants, historique |
 | appareil : nom, fabricant, modèle, intégration | coordonnées GPS, IP, attributs dynamiques |
-| device_class, unité, state_class, catégorie | identifiants internes, titres des config entries |
+| device_class, unité, state_class, catégorie | identifiants internes d'appareils |
 | `options`, `hvac_modes`, `preset_modes`, `event_types`, min/max… | |
 
 La liste blanche des attributs est dans [`const.py`](custom_components/entity_inventory/const.py).
 
-> ⚠️ Les **noms** que vous avez donnés à vos pièces et appareils sont exportés tels quels. Relisez le fichier avant de le partager.
+> ⚠️ Les **noms** sont exportés tels quels (pièces, appareils, calendriers…). Certaines intégrations de surveillance nomment leurs capteurs d'après le titre des comptes qu'elles surveillent : les adresses e-mail sont masquées dans les noms, mais un `entity_id` peut en contenir une forme « slugifiée » (il doit rester exact pour l'IA). Excluez ces intégrations si besoin, et relisez le fichier avant de le partager.
 
 ## Développement
 

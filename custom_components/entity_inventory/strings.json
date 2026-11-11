@@ -8,13 +8,15 @@
           "output_path": "Output file",
           "include_config": "Include configuration entities",
           "include_diagnostic": "Include diagnostic entities",
-          "excluded_integrations": "Integrations to exclude"
+          "excluded_integrations": "Integrations to exclude",
+          "redact_emails": "Hide e-mail addresses"
         },
         "data_description": {
           "output_path": "Path relative to /config or absolute (e.g. /share/entity_inventory.yaml). /config/www is forbidden because it is public.",
           "include_config": "Technical settings (calibration, LED mode, 'check update' buttons…). Rarely useful to write automations, and bulky.",
           "include_diagnostic": "Signal, LQI, voltage, last seen… Batteries are always kept, even when this option is off.",
-          "excluded_integrations": "Integrations whose entities will not be exported at all (e.g. proxmoxve, sentinel). Greatly reduces the file size on large installations."
+          "excluded_integrations": "Integrations whose entities will not be exported at all (e.g. proxmoxve, sentinel, sentinel_report). Greatly reduces the file size on large installations.",
+          "redact_emails": "Replaces any e-mail address found in a name (account title echoed by a monitoring integration, notifier…) with [email]. Entity IDs are left unchanged."
         }
       }
     },
@@ -34,13 +36,15 @@
           "output_path": "Output file",
           "include_config": "Include configuration entities",
           "include_diagnostic": "Include diagnostic entities",
-          "excluded_integrations": "Integrations to exclude"
+          "excluded_integrations": "Integrations to exclude",
+          "redact_emails": "Hide e-mail addresses"
         },
         "data_description": {
           "output_path": "Path relative to /config or absolute (e.g. /share/entity_inventory.yaml). /config/www is forbidden because it is public.",
           "include_config": "Technical settings (calibration, LED mode, 'check update' buttons…). Rarely useful to write automations, and bulky.",
           "include_diagnostic": "Signal, LQI, voltage, last seen… Batteries are always kept, even when this option is off.",
-          "excluded_integrations": "Integrations whose entities will not be exported at all (e.g. proxmoxve, sentinel). Greatly reduces the file size on large installations."
+          "excluded_integrations": "Integrations whose entities will not be exported at all (e.g. proxmoxve, sentinel, sentinel_report). Greatly reduces the file size on large installations.",
+          "redact_emails": "Replaces any e-mail address found in a name (account title echoed by a monitoring integration, notifier…) with [email]. Entity IDs are left unchanged."
         }
       }
     },

@@ -2,6 +2,7 @@
 
 from enum import Enum
 from pathlib import Path
+import re
 
 import pytest
 import yaml
@@ -23,6 +24,7 @@ from custom_components.entity_inventory.const import (
     CONF_INCLUDE_CONFIG,
     CONF_INCLUDE_DIAGNOSTIC,
     CONF_OUTPUT_PATH,
+    CONF_REDACT_EMAILS,
     DOMAIN,
 )
 from custom_components.entity_inventory.exporter import _aliases, _short_name
@@ -94,6 +96,17 @@ async def _populate(hass: HomeAssistant) -> None:
     ent_reg.async_update_entity(sel.entity_id, area_id=salon.id)
     hass.states.async_set(sel.entity_id, "Absent", {"options": ["Présent", "Absent", "Vacances"]})
 
+    # nom « à la Xiaomi » avec espace parasite
+    ent("event", "rad1-evt", original_name=" Switch Click", capabilities={"event_types": ["click"]})
+    # capteur « à la Sentinel » qui reprend un titre de compte
+    ent_reg.async_get_or_create("binary_sensor", "sentinel", "s1",
+                                original_name="heatzy (jean.dupont@example.com) (heatzy)")
+    # helper : integration == domaine
+    ent_reg.async_get_or_create("input_boolean", "input_boolean", "nuit", original_name="Mode nuit")
+    # nombre avec mode d'affichage
+    hass.states.async_set("input_number.consigne", "19", {"friendly_name": "Consigne", "min": 7,
+                                                       "max": 30, "step": 0.5, "mode": "box"})
+
     hass.states.async_set("sensor.legacy_template", "12", {"friendly_name": "Vieux template",
                                                           "unit_of_measurement": "kWh"})
 
@@ -141,6 +154,17 @@ async def test_export_defaults(hass: HomeAssistant, tmp_path: Path) -> None:
     assert resp["size_bytes"] == len(text.encode())
     # pas d'alias parasites
     assert "aliases: [0]" not in text
+    # 0.3.0 : e-mails masqués, espaces normalisés, integration redondante, mode, auto-exclusion
+    assert "jean.dupont@example.com" not in text and "heatzy ([email]) (heatzy)" in text
+    assert data["meta"]["filters"]["emails_in_names"] == "redacted"
+    assert ents["Switch Click"]["event_types"] == ["click"]
+    loose = {e["name"]: e for e in data["unassigned"]["entities"]}
+    assert "integration" not in loose["Mode nuit"]
+    assert loose["heatzy ([email]) (heatzy)"]["integration"] == "sentinel"
+    assert not re.search(r"^\s+mode:", text, re.M)
+    consigne = next(e for e in data["no_registry"] if e["id"] == "input_number.consigne")
+    assert consigne["step"] == 0.5 and "mode" not in consigne
+    assert "entity_inventory_" not in text
 
 
 async def test_export_all_and_exclusions(hass: HomeAssistant, tmp_path: Path) -> None:
@@ -149,12 +173,14 @@ async def test_export_all_and_exclusions(hass: HomeAssistant, tmp_path: Path) ->
         CONF_INCLUDE_CONFIG: True,
         CONF_INCLUDE_DIAGNOSTIC: True,
         CONF_EXCLUDED_INTEGRATIONS: ["proxmoxve"],
+        CONF_REDACT_EMAILS: False,
     })
     data, text, _ = await _export(hass)
     ents = _radiateur(data)
     assert ents["Mode LED"]["options"] == ["on", "off"] and "LQI" in ents
     assert "PVE0" not in text and "proxmoxve" in data["meta"]["filters"]["excluded_integrations"]
     assert data["meta"]["counts"]["excluded"]["integrations"] == 1
+    assert "jean.dupont@example.com" in text
 
 
 def test_helpers() -> None:
@@ -190,6 +216,7 @@ async def test_config_flow(hass: HomeAssistant) -> None:
         CONF_INCLUDE_CONFIG: False,
         CONF_INCLUDE_DIAGNOSTIC: False,
         CONF_EXCLUDED_INTEGRATIONS: ["sentinel"],
+        CONF_REDACT_EMAILS: True,
     }
 
 
