@@ -6,6 +6,8 @@ CONF_OUTPUT_PATH = "output_path"
 DEFAULT_OUTPUT_PATH = "entity_inventory.yaml"  # relatif au dossier /config
 
 SERVICE_EXPORT = "export"
+SERVICE_VALIDATE = "validate"
+ATTR_YAML = "yaml"
 
 # Filtres (options de l'intégration)
 CONF_INCLUDE_CONFIG = "include_config"

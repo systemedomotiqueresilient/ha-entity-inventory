@@ -63,6 +63,16 @@
     "export": {
       "name": "Exporter l'inventaire",
       "description": "Génère le fichier YAML d'inventaire (structure uniquement, sans états), selon les filtres configurés."
+    },
+    "validate": {
+      "name": "Valider un YAML",
+      "description": "Vérifie un YAML (automatisation, script, package) proposé par une IA : entités et actions inexistantes, valeurs de preset/option invalides, numeric_state sur une entité non numérique, syntaxe ancienne. Ne modifie rien.",
+      "fields": {
+        "yaml": {
+          "name": "YAML",
+          "description": "Le YAML à vérifier, tel que l'IA l'a produit."
+        }
+      }
     }
   }
 }

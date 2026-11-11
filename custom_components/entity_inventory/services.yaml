@@ -1,1 +1,8 @@
 export:
+validate:
+  fields:
+    yaml:
+      required: true
+      selector:
+        text:
+          multiline: true

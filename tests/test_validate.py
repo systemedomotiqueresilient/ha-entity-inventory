@@ -1,0 +1,144 @@
+"""Tests de l'action entity_inventory.validate (cas tirés d'un vrai test avec Copilot)."""
+
+from pathlib import Path
+
+import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
+
+from custom_components.entity_inventory.const import CONF_OUTPUT_PATH, DOMAIN
+
+
+@pytest.fixture(autouse=True)
+def auto_enable_custom_integrations(enable_custom_integrations):
+    yield
+
+
+@pytest.fixture
+async def setup(hass: HomeAssistant, tmp_path: Path) -> None:
+    for domain, service in (("climate", "set_preset_mode"), ("climate", "set_hvac_mode"),
+                            ("notify", "iphone"), ("light", "turn_on")):
+        hass.services.async_register(domain, service, lambda call: None)
+    hass.states.async_set("climate.sdb", "heat", {
+        "hvac_modes": ["heat", "off"], "preset_modes": ["comfort", "comfort_1", "eco", "away"]})
+    hass.states.async_set("climate.mobile", "heat", {
+        "hvac_modes": ["heat", "off", "auto"], "preset_modes": ["comfort", "eco", "Comfort 1", "boost"]})
+    hass.states.async_set("binary_sensor.fenetre_sdb", "off", {"device_class": "window"})
+    hass.states.async_set("sensor.pile_porte", "87", {"unit_of_measurement": "%"})
+    off = er.async_get(hass).async_get_or_create("sensor", "zha", "x", original_name="LQI")
+    er.async_get(hass).async_update_entity(off.entity_id, disabled_by=er.RegistryEntryDisabler.USER)
+    entry = MockConfigEntry(domain=DOMAIN, options={CONF_OUTPUT_PATH: str(tmp_path / "i.yaml")})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+
+async def _validate(hass: HomeAssistant, text: str) -> dict:
+    return await hass.services.async_call(
+        DOMAIN, "validate", {"yaml": text}, blocking=True, return_response=True
+    )
+
+
+COPILOT_1 = """
+alias: SDB - Sèche-serviette selon fenêtre
+mode: single
+trigger:
+  - platform: state
+    entity_id: binary_sensor.fenetre_sdb
+action:
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: binary_sensor.fenetre_sdb
+            state: "on"
+        sequence:
+          - service: climate.set_preset_mode
+            target:
+              entity_id: climate.sdb
+            data:
+              preset_mode: eco
+"""
+
+
+async def test_copilot_answer_valid_but_legacy(hass: HomeAssistant, setup) -> None:
+    result = await _validate(hass, COPILOT_1)
+    assert result["valid"] is True and result["errors"] == []
+    assert result["entities_checked"] == 2
+    assert any("service:" in w for w in result["warnings"])
+    assert any("platform:" in w for w in result["warnings"])
+    assert any("trigger:" in w for w in result["warnings"])
+
+
+async def test_modern_syntax_no_warning(hass: HomeAssistant, setup) -> None:
+    result = await _validate(hass, """
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.fenetre_sdb
+    to: "on"
+actions:
+  - action: climate.set_preset_mode
+    target: {entity_id: climate.mobile}
+    data: {preset_mode: "Comfort 1"}
+""")
+    assert result == {"valid": True, "errors": [], "warnings": [], "entities_checked": 2}
+
+
+async def test_wrong_values(hass: HomeAssistant, setup) -> None:
+    result = await _validate(hass, """
+actions:
+  - action: climate.set_preset_mode
+    target: {entity_id: climate.mobile}
+    data: {preset_mode: comfort_1}
+  - action: climate.set_hvac_mode
+    target: {entity_id: climate.sdb}
+    data: {hvac_mode: off}
+  - action: climate.set_party_mode
+    target: {entity_id: climate.sdb}
+""")
+    errors = "\n".join(result["errors"])
+    assert result["valid"] is False
+    assert "comfort_1" in errors and "Comfort 1" in errors  # liste des valeurs possibles
+    assert "booléen False" in errors
+    assert "action inexistante « climate.set_party_mode »" in errors
+
+
+async def test_copilot_answer_3_group(hass: HomeAssistant, setup) -> None:
+    result = await _validate(hass, """
+triggers:
+  - trigger: numeric_state
+    entity_id: group.batteries_zigbee
+    below: 15
+  - trigger: numeric_state
+    entity_id: binary_sensor.fenetre_sdb
+    below: 15
+  - trigger: numeric_state
+    entity_id: sensor.pile_porte
+    below: 15
+actions:
+  - action: notify.iphone
+    data:
+      message: "{{ states('sensor.pile_inconnue') }} {{ states.sensor.pile_porte.state }}"
+""")
+    errors = "\n".join(result["errors"])
+    assert "entité inexistante « group.batteries_zigbee »" in errors
+    assert "numeric_state sur « binary_sensor.fenetre_sdb »" in errors
+    assert "entité inexistante « sensor.pile_inconnue »" in errors
+    assert "sensor.pile_porte" not in errors
+
+
+async def test_tags_disabled_and_broken_yaml(hass: HomeAssistant, setup) -> None:
+    result = await _validate(hass, """
+blueprint:
+  input:
+    cible: !input cible
+actions:
+  - action: light.turn_on
+    target:
+      entity_id: sensor.zha_x
+""")
+    assert any("désactivée" in w for w in result["warnings"])
+    assert any("autre domaine" in w for w in result["warnings"])
+    broken = await _validate(hass, "actions: [unclosed")
+    assert broken["valid"] is False and broken["errors"][0].startswith("YAML illisible")

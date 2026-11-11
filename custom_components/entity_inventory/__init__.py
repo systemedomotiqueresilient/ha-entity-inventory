@@ -11,8 +11,9 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
-from .const import DOMAIN, SERVICE_EXPORT
+from .const import ATTR_YAML, DOMAIN, SERVICE_EXPORT, SERVICE_VALIDATE
 from .exporter import async_export, export_options, resolve_output_path
+from .validator import async_validate_yaml
 
 PLATFORMS: list[Platform] = [Platform.BUTTON]
 
@@ -42,6 +43,17 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         _handle_export,
         schema=vol.Schema({}),
         supports_response=SupportsResponse.OPTIONAL,
+    )
+
+    async def _handle_validate(call: ServiceCall) -> ServiceResponse:
+        return async_validate_yaml(hass, call.data[ATTR_YAML])
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_VALIDATE,
+        _handle_validate,
+        schema=vol.Schema({vol.Required(ATTR_YAML): cv.string}),
+        supports_response=SupportsResponse.ONLY,
     )
     return True
 

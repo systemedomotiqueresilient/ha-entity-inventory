@@ -69,6 +69,28 @@ automation:
 
 Puis, dans la conversation avec l'IA : *« Voici l'inventaire de ma maison. Écris un package qui passe tous les radiateurs de l'étage en eco quand l'alarme est armée. »*
 
+## Vérifier ce que l'IA a écrit
+
+*Outils de développement → Actions → `entity_inventory.validate`*, coller le YAML produit par l'IA :
+
+```yaml
+action: entity_inventory.validate
+data:
+  yaml: |
+    triggers:
+      - trigger: numeric_state
+        entity_id: group.batteries_zigbee
+        below: 15
+    …
+```
+
+La réponse liste, sans rien modifier :
+
+- **erreurs** : entité ou action inexistante (y compris dans les templates `states('…')`), `preset_mode` / `option` / `hvac_mode` hors des valeurs permises (avec la liste correcte), `off` non quoté interprété comme booléen, `numeric_state` sur une entité non numérique (`group.*`, `binary_sensor`…) ;
+- **avertissements** : entité désactivée, action appliquée à une entité d'un autre domaine, syntaxe ancienne (`platform:`, `service:`, `trigger:` au lieu de `triggers:`…).
+
+Ce que la validation ne peut pas voir : une liste incomplète (« toutes les piles » à qui il en manque) ou une logique discutable. Relisez quand même.
+
 ## Contenu du fichier
 
 ```yaml

@@ -9,6 +9,9 @@
   "services": {
     "export": {
       "service": "mdi:file-export-outline"
+    },
+    "validate": {
+      "service": "mdi:check-decagram-outline"
     }
   }
 }

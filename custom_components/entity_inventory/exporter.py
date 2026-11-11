@@ -64,6 +64,21 @@ HEADER = """\
 #  - Les entités désactivées ne sont pas listées : elles n'existent pas à l'exécution.
 #  - "integration" absent = intégration de l'appareil, ou celle du domaine de l'entity_id.
 #  - "[email]" dans un nom = adresse e-mail masquée (l'entity_id, lui, reste exact).
+#
+# Consignes pour rédiger du YAML à partir de ce fichier :
+#  - N'utilise QUE des entity_id présents ici. S'il en manque un, dis-le au lieu de l'inventer.
+#  - Les valeurs (preset_modes, options, hvac_modes…) sont exactes : casse et espaces comptent.
+#  - Syntaxe actuelle de Home Assistant : "triggers:" / "- trigger: state",
+#    "conditions:", "actions:" / "- action: domaine.service" (pas "platform:" ni "service:").
+#  - Si plusieurs entités conviennent (ex. deux thermostats pour un même radiateur), demande laquelle.
+#  - Les automatisations, scripts et scènes existants sont listés : signale ceux qui agissent
+#    déjà sur les mêmes entités (risque de conflit) et, si utile, mémorise puis restaure l'état
+#    avec scene.create plutôt que d'imposer une valeur fixe.
+#  - Pour une catégorie ("toutes les piles", "toutes les fenêtres"), parcours TOUT le fichier :
+#    filtre par domaine + device_class (+ unit), dans toutes les pièces et dans "unassigned".
+#  - numeric_state exige une entité à état numérique (sensor, number, input_number…) :
+#    jamais un group.*, binary_sensor ou switch. Pour un minimum, utiliser un capteur min_max.
+#  - Le YAML produit peut être vérifié dans Home Assistant avec l'action entity_inventory.validate.
 
 """
 
@@ -371,6 +386,19 @@ def async_build_inventory(
             "excluded": excluded,
         },
     }
+
+    # Étiquettes : seulement celles réellement portées par un élément exporté
+    used_labels: set[str] = set()
+    for node in (*areas.values(), unassigned, no_registry):
+        stack = [node]
+        while stack:
+            current = stack.pop()
+            if isinstance(current, dict):
+                used_labels.update(current.get("labels") or ())
+                stack.extend(current.values())
+            elif isinstance(current, list):
+                stack.extend(current)
+    labels = {key: value for key, value in labels.items() if key in used_labels}
 
     data: dict[str, Any] = {"meta": _clean(meta)}
     _set(data, "floors", floors)

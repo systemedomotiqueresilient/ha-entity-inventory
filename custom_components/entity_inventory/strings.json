@@ -63,6 +63,16 @@
     "export": {
       "name": "Export inventory",
       "description": "Generates the YAML inventory file (structure only, no states) using the configured filters."
+    },
+    "validate": {
+      "name": "Validate YAML",
+      "description": "Checks YAML (automation, script, package) written by an AI: unknown entities and actions, invalid preset/option values, numeric_state on non-numeric entities, legacy syntax. Changes nothing.",
+      "fields": {
+        "yaml": {
+          "name": "YAML",
+          "description": "The YAML to check, as produced by the AI."
+        }
+      }
     }
   }
 }
