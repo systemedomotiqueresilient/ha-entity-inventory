@@ -24,7 +24,17 @@ from homeassistant.helpers import (
 from homeassistant.util import dt as dt_util
 from homeassistant.util.file import write_utf8_file_atomic
 
-from .const import CONF_OUTPUT_PATH, DEFAULT_OUTPUT_PATH, STATIC_ATTRIBUTES
+from .const import (
+    ALWAYS_KEEP_DEVICE_CLASSES,
+    CONF_EXCLUDED_INTEGRATIONS,
+    CONF_INCLUDE_CONFIG,
+    CONF_INCLUDE_DIAGNOSTIC,
+    CONF_OUTPUT_PATH,
+    DEFAULT_INCLUDE_CONFIG,
+    DEFAULT_INCLUDE_DIAGNOSTIC,
+    DEFAULT_OUTPUT_PATH,
+    STATIC_ATTRIBUTES,
+)
 
 HEADER = """\
 # Inventaire Home Assistant — généré par l'intégration Entity Inventory.
@@ -34,6 +44,8 @@ HEADER = """\
 #
 # Règles de lecture :
 #  - "id" est l'entity_id exact à utiliser dans le YAML.
+#  - Sous un appareil, "name" est le nom COURT de l'entité : son nom affiché est
+#    "<nom de l'appareil> <name>". Sans "name", elle porte le nom de l'appareil.
 #  - Les clés de "areas" sont des area_id (utilisables dans target: area_id).
 #  - Les clés de "floors" et "labels" sont des floor_id / label_id.
 #  - "area" sur une entité = elle est placée dans une autre pièce que son appareil.
@@ -41,9 +53,24 @@ HEADER = """\
 #  - hidden: true = masquée dans l'interface mais pleinement fonctionnelle.
 #  - "unassigned" = appareils/entités sans pièce.
 #  - "no_registry" = entités sans unique_id (YAML historique), non assignables à une pièce.
-#  - "disabled" = entités désactivées : elles n'existent pas à l'exécution, ne pas les utiliser.
+#  - L'export peut être FILTRÉ (voir meta.filters et meta.counts.excluded) : une entité
+#    absente d'ici peut exister. Ne jamais inventer d'entity_id.
+#  - Les entités désactivées ne sont pas listées : elles n'existent pas à l'exécution.
 
 """
+
+
+def export_options(entry: ConfigEntry) -> dict[str, Any]:
+    """Options de filtrage, avec valeurs par défaut pour les anciennes configurations."""
+    return {
+        CONF_INCLUDE_CONFIG: entry.options.get(CONF_INCLUDE_CONFIG, DEFAULT_INCLUDE_CONFIG),
+        CONF_INCLUDE_DIAGNOSTIC: entry.options.get(
+            CONF_INCLUDE_DIAGNOSTIC, DEFAULT_INCLUDE_DIAGNOSTIC
+        ),
+        CONF_EXCLUDED_INTEGRATIONS: sorted(
+            entry.options.get(CONF_EXCLUDED_INTEGRATIONS) or []
+        ),
+    }
 
 
 # --------------------------------------------------------------------------- #
@@ -119,9 +146,34 @@ def _capabilities(
     return out
 
 
+def _aliases(values: Any) -> list[str]:
+    """Alias texte uniquement.
+
+    Depuis HA 2026.x la liste peut contenir un marqueur interne (« utiliser le nom
+    de l'entité ») qui n'est pas un alias : sans ce filtre il sortait en « 0 ».
+    """
+    return sorted(v for v in values or () if isinstance(v, str) and v)
+
+
+def _short_name(full: str, device_name: str) -> str | None:
+    """Retire le préfixe « nom de l'appareil » (déjà porté par le parent)."""
+    if full == device_name:
+        return None
+    if full.startswith(device_name + " "):
+        return full[len(device_name) + 1 :]
+    return full
+
+
 @callback
-def async_build_inventory(hass: HomeAssistant) -> dict[str, Any]:
+def async_build_inventory(
+    hass: HomeAssistant, options: Mapping[str, Any] | None = None
+) -> dict[str, Any]:
     """Construit l'inventaire (à appeler dans la boucle d'événements)."""
+    options = options or {}
+    include_config = options.get(CONF_INCLUDE_CONFIG, DEFAULT_INCLUDE_CONFIG)
+    include_diagnostic = options.get(CONF_INCLUDE_DIAGNOSTIC, DEFAULT_INCLUDE_DIAGNOSTIC)
+    excluded_integrations = set(options.get(CONF_EXCLUDED_INTEGRATIONS) or ())
+
     area_reg = ar.async_get(hass)
     floor_reg = fr.async_get(hass)
     label_reg = lr.async_get(hass)
@@ -137,7 +189,7 @@ def async_build_inventory(hass: HomeAssistant) -> dict[str, Any]:
     ):
         item: dict[str, Any] = {"name": floor.name}
         _set(item, "level", floor.level)
-        _set(item, "aliases", floor.aliases)
+        _set(item, "aliases", _aliases(floor.aliases))
         floors[floor.floor_id] = item
 
     labels = {
@@ -155,7 +207,7 @@ def async_build_inventory(hass: HomeAssistant) -> dict[str, Any]:
     for area in sorted(area_reg.async_list_areas(), key=_area_sort):
         item = {"name": area.name}
         _set(item, "floor", area.floor_id)
-        _set(item, "aliases", area.aliases)
+        _set(item, "aliases", _aliases(area.aliases))
         _set(item, "labels", area.labels)
         areas[area.id] = item
 
@@ -179,45 +231,59 @@ def async_build_inventory(hass: HomeAssistant) -> dict[str, Any]:
         return integration_cache[device.id]
 
     # --- Entités du registre ---------------------------------------------- #
-    disabled: list[str] = []
+    disabled_count = 0
+    excluded = {"config": 0, "diagnostic": 0, "integrations": 0}
     entities_by_device: dict[str, list[dict[str, Any]]] = {}
     entity_count = 0
 
     for entry in sorted(ent_reg.entities.values(), key=lambda e: e.entity_id):
         if entry.disabled_by:
-            disabled.append(entry.entity_id)
+            disabled_count += 1
             continue
 
         device = dev_reg.async_get(entry.device_id) if entry.device_id else None
+        device_integration = _device_integration(device) if device else None
+        if excluded_integrations & {entry.platform, device_integration}:
+            excluded["integrations"] += 1
+            continue
+
         state = hass.states.get(entry.entity_id)
         attributes = state.attributes if state else {}
+        device_class = _clean(
+            entry.device_class or entry.original_device_class or attributes.get("device_class")
+        )
+        category = _clean(entry.entity_category)
+        if device_class not in ALWAYS_KEEP_DEVICE_CLASSES:
+            if category == "config" and not include_config:
+                excluded["config"] += 1
+                continue
+            if category == "diagnostic" and not include_diagnostic:
+                excluded["diagnostic"] += 1
+                continue
 
+        full_name = attributes.get("friendly_name") or _entity_fallback_name(entry, device)
         item: dict[str, Any] = {"id": entry.entity_id}
         _set(
             item,
             "name",
-            attributes.get("friendly_name") or _entity_fallback_name(entry, device),
+            _short_name(full_name, _device_name(device)) if device else full_name,
         )
-        _set(
-            item,
-            "device_class",
-            entry.device_class or entry.original_device_class or attributes.get("device_class"),
-        )
+        _set(item, "device_class", device_class)
         _set(
             item,
             "unit",
             entry.unit_of_measurement or attributes.get("unit_of_measurement"),
         )
-        _set(item, "category", entry.entity_category)
+        _set(item, "category", category)
         if entry.hidden_by:
             item["hidden"] = True
-        _set(item, "aliases", [a for a in entry.aliases if a])
+        _set(item, "aliases", _aliases(entry.aliases))
         _set(item, "labels", entry.labels)
         item.update(_capabilities(entry.capabilities, attributes))
         entity_count += 1
 
         if device:
-            if entry.platform != _device_integration(device):
+            if entry.platform != device_integration:
                 item["integration"] = entry.platform
             if entry.area_id and entry.area_id != device.area_id:
                 item["area"] = entry.area_id
@@ -265,12 +331,19 @@ def async_build_inventory(hass: HomeAssistant) -> dict[str, Any]:
         "exported_at": dt_util.now().isoformat(timespec="seconds"),
         "language": hass.config.language,
         "temperature_unit": hass.config.units.temperature_unit,
+        "filters": {
+            "config_entities": "included" if include_config else "excluded",
+            "diagnostic_entities": "included" if include_diagnostic else "excluded",
+            "always_kept_device_classes": sorted(ALWAYS_KEEP_DEVICE_CLASSES),
+            "excluded_integrations": sorted(excluded_integrations),
+        },
         "counts": {
             "floors": len(floors),
             "areas": len(areas),
             "devices": device_count,
             "entities": entity_count,
-            "disabled": len(disabled),
+            "disabled": disabled_count,
+            "excluded": excluded,
         },
     }
 
@@ -280,7 +353,6 @@ def async_build_inventory(hass: HomeAssistant) -> dict[str, Any]:
     _set(data, "areas", areas)
     _set(data, "unassigned", unassigned)
     _set(data, "no_registry", no_registry)
-    _set(data, "disabled", disabled)
     return data
 
 
@@ -317,23 +389,26 @@ def dump_inventory(data: dict[str, Any]) -> str:
 # --------------------------------------------------------------------------- #
 # Export
 # --------------------------------------------------------------------------- #
-async def async_export(hass: HomeAssistant, path: Path) -> dict[str, Any]:
+async def async_export(
+    hass: HomeAssistant, path: Path, options: Mapping[str, Any] | None = None
+) -> dict[str, Any]:
     """Construit l'inventaire et l'écrit de façon atomique."""
     if is_forbidden_path(hass, str(path)):
         raise HomeAssistantError(
             f"Export refusé vers {path} : /config/www est public (servi sans authentification)"
         )
 
-    data = async_build_inventory(hass)
+    data = async_build_inventory(hass, options)
 
-    def _write() -> None:
+    def _write() -> int:
         content = dump_inventory(data)
         path.parent.mkdir(parents=True, exist_ok=True)
         write_utf8_file_atomic(str(path), content)
+        return len(content.encode("utf-8"))
 
     try:
-        await hass.async_add_executor_job(_write)
+        size = await hass.async_add_executor_job(_write)
     except OSError as err:
         raise HomeAssistantError(f"Impossible d'écrire {path} : {err}") from err
 
-    return {"path": str(path), **data["meta"]["counts"]}
+    return {"path": str(path), "size_bytes": size, **data["meta"]["counts"]}

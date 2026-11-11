@@ -9,7 +9,7 @@ from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .exporter import async_export, resolve_output_path
+from .exporter import async_export, export_options, resolve_output_path
 
 
 async def async_setup_entry(
@@ -34,4 +34,8 @@ class ExportInventoryButton(ButtonEntity):
         )
 
     async def async_press(self) -> None:
-        await async_export(self.hass, resolve_output_path(self.hass, self._entry))
+        await async_export(
+            self.hass,
+            resolve_output_path(self.hass, self._entry),
+            export_options(self._entry),
+        )

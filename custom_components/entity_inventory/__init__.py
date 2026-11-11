@@ -12,7 +12,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
 from .const import DOMAIN, SERVICE_EXPORT
-from .exporter import async_export, resolve_output_path
+from .exporter import async_export, export_options, resolve_output_path
 
 PLATFORMS: list[Platform] = [Platform.BUTTON]
 
@@ -30,7 +30,10 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         ]
         if not entries:
             raise HomeAssistantError("Entity Inventory n'est pas configuré")
-        result = await async_export(hass, resolve_output_path(hass, entries[0]))
+        entry = entries[0]
+        result = await async_export(
+            hass, resolve_output_path(hass, entry), export_options(entry)
+        )
         return result if call.return_response else None
 
     hass.services.async_register(

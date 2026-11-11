@@ -5,10 +5,16 @@
         "title": "Entity Inventory",
         "description": "Exporte la structure de Home Assistant (pièces, appareils, entités, valeurs possibles) dans un fichier YAML à fournir à une IA. Aucun état n'est exporté.",
         "data": {
-          "output_path": "Fichier de sortie"
+          "output_path": "Fichier de sortie",
+          "include_config": "Inclure les entités de configuration",
+          "include_diagnostic": "Inclure les entités de diagnostic",
+          "excluded_integrations": "Intégrations à exclure"
         },
         "data_description": {
-          "output_path": "Chemin relatif à /config ou chemin absolu (ex. /share/entity_inventory.yaml). /config/www est interdit car public."
+          "output_path": "Chemin relatif à /config ou chemin absolu (ex. /share/entity_inventory.yaml). /config/www est interdit car public.",
+          "include_config": "Réglages techniques (calibration, mode LED, bouton « vérifier la mise à jour »…). Rarement utiles pour écrire une automatisation, et volumineux.",
+          "include_diagnostic": "Signal, LQI, tension, dernière vue… Les batteries sont toujours conservées, même si cette option est désactivée.",
+          "excluded_integrations": "Intégrations dont aucune entité ne sera exportée (ex. proxmoxve, sentinel). Réduit fortement la taille du fichier sur une grosse installation."
         }
       }
     },
@@ -23,11 +29,18 @@
     "step": {
       "init": {
         "title": "Entity Inventory",
+        "description": "Exporte la structure de Home Assistant (pièces, appareils, entités, valeurs possibles) dans un fichier YAML à fournir à une IA. Aucun état n'est exporté.",
         "data": {
-          "output_path": "Fichier de sortie"
+          "output_path": "Fichier de sortie",
+          "include_config": "Inclure les entités de configuration",
+          "include_diagnostic": "Inclure les entités de diagnostic",
+          "excluded_integrations": "Intégrations à exclure"
         },
         "data_description": {
-          "output_path": "Chemin relatif à /config ou chemin absolu (ex. /share/entity_inventory.yaml). /config/www est interdit car public."
+          "output_path": "Chemin relatif à /config ou chemin absolu (ex. /share/entity_inventory.yaml). /config/www est interdit car public.",
+          "include_config": "Réglages techniques (calibration, mode LED, bouton « vérifier la mise à jour »…). Rarement utiles pour écrire une automatisation, et volumineux.",
+          "include_diagnostic": "Signal, LQI, tension, dernière vue… Les batteries sont toujours conservées, même si cette option est désactivée.",
+          "excluded_integrations": "Intégrations dont aucune entité ne sera exportée (ex. proxmoxve, sentinel). Réduit fortement la taille du fichier sur une grosse installation."
         }
       }
     },
@@ -45,7 +58,7 @@
   "services": {
     "export": {
       "name": "Exporter l'inventaire",
-      "description": "Génère le fichier YAML d'inventaire (structure uniquement, sans états)."
+      "description": "Génère le fichier YAML d'inventaire (structure uniquement, sans états), selon les filtres configurés."
     }
   }
 }

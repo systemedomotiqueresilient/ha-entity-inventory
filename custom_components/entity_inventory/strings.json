@@ -5,10 +5,16 @@
         "title": "Entity Inventory",
         "description": "Exports the Home Assistant structure (areas, devices, entities, possible values) to a YAML file meant to be given to an AI. No states are exported.",
         "data": {
-          "output_path": "Output file"
+          "output_path": "Output file",
+          "include_config": "Include configuration entities",
+          "include_diagnostic": "Include diagnostic entities",
+          "excluded_integrations": "Integrations to exclude"
         },
         "data_description": {
-          "output_path": "Path relative to /config or absolute (e.g. /share/entity_inventory.yaml). /config/www is forbidden because it is public."
+          "output_path": "Path relative to /config or absolute (e.g. /share/entity_inventory.yaml). /config/www is forbidden because it is public.",
+          "include_config": "Technical settings (calibration, LED mode, 'check update' buttons…). Rarely useful to write automations, and bulky.",
+          "include_diagnostic": "Signal, LQI, voltage, last seen… Batteries are always kept, even when this option is off.",
+          "excluded_integrations": "Integrations whose entities will not be exported at all (e.g. proxmoxve, sentinel). Greatly reduces the file size on large installations."
         }
       }
     },
@@ -23,11 +29,18 @@
     "step": {
       "init": {
         "title": "Entity Inventory",
+        "description": "Exports the Home Assistant structure (areas, devices, entities, possible values) to a YAML file meant to be given to an AI. No states are exported.",
         "data": {
-          "output_path": "Output file"
+          "output_path": "Output file",
+          "include_config": "Include configuration entities",
+          "include_diagnostic": "Include diagnostic entities",
+          "excluded_integrations": "Integrations to exclude"
         },
         "data_description": {
-          "output_path": "Path relative to /config or absolute (e.g. /share/entity_inventory.yaml). /config/www is forbidden because it is public."
+          "output_path": "Path relative to /config or absolute (e.g. /share/entity_inventory.yaml). /config/www is forbidden because it is public.",
+          "include_config": "Technical settings (calibration, LED mode, 'check update' buttons…). Rarely useful to write automations, and bulky.",
+          "include_diagnostic": "Signal, LQI, voltage, last seen… Batteries are always kept, even when this option is off.",
+          "excluded_integrations": "Integrations whose entities will not be exported at all (e.g. proxmoxve, sentinel). Greatly reduces the file size on large installations."
         }
       }
     },
@@ -45,7 +58,7 @@
   "services": {
     "export": {
       "name": "Export inventory",
-      "description": "Generates the YAML inventory file (structure only, no states)."
+      "description": "Generates the YAML inventory file (structure only, no states) using the configured filters."
     }
   }
 }

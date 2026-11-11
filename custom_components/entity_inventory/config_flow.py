@@ -12,12 +12,76 @@ from homeassistant.config_entries import (
     ConfigFlowResult,
     OptionsFlow,
 )
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.selector import (
+    BooleanSelector,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+    TextSelector,
+)
 
-from .const import CONF_OUTPUT_PATH, DEFAULT_OUTPUT_PATH, DOMAIN
+from .const import (
+    CONF_EXCLUDED_INTEGRATIONS,
+    CONF_INCLUDE_CONFIG,
+    CONF_INCLUDE_DIAGNOSTIC,
+    CONF_OUTPUT_PATH,
+    DEFAULT_INCLUDE_CONFIG,
+    DEFAULT_INCLUDE_DIAGNOSTIC,
+    DEFAULT_OUTPUT_PATH,
+    DOMAIN,
+)
 from .exporter import is_forbidden_path
 
-SCHEMA = vol.Schema({vol.Required(CONF_OUTPUT_PATH): str})
+DEFAULTS: dict[str, Any] = {
+    CONF_OUTPUT_PATH: DEFAULT_OUTPUT_PATH,
+    CONF_INCLUDE_CONFIG: DEFAULT_INCLUDE_CONFIG,
+    CONF_INCLUDE_DIAGNOSTIC: DEFAULT_INCLUDE_DIAGNOSTIC,
+    CONF_EXCLUDED_INTEGRATIONS: [],
+}
+
+
+def _schema(hass: HomeAssistant, values: dict[str, Any]) -> vol.Schema:
+    """Formulaire commun à l'ajout et aux options, pré-rempli avec `values`."""
+    domains = sorted(
+        {entry.domain for entry in hass.config_entries.async_entries() if entry.domain != DOMAIN}
+        | set(values.get(CONF_EXCLUDED_INTEGRATIONS) or ())
+    )
+    return vol.Schema(
+        {
+            vol.Required(CONF_OUTPUT_PATH, default=values[CONF_OUTPUT_PATH]): TextSelector(),
+            vol.Required(
+                CONF_INCLUDE_CONFIG, default=values[CONF_INCLUDE_CONFIG]
+            ): BooleanSelector(),
+            vol.Required(
+                CONF_INCLUDE_DIAGNOSTIC, default=values[CONF_INCLUDE_DIAGNOSTIC]
+            ): BooleanSelector(),
+            vol.Optional(
+                CONF_EXCLUDED_INTEGRATIONS, default=values[CONF_EXCLUDED_INTEGRATIONS]
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=domains,
+                    multiple=True,
+                    custom_value=True,
+                    sort=True,
+                    mode=SelectSelectorMode.DROPDOWN,
+                )
+            ),
+        }
+    )
+
+
+def _validate(hass: HomeAssistant, user_input: dict[str, Any]) -> tuple[dict, dict]:
+    """Nettoie la saisie ; renvoie (options, erreurs)."""
+    options = {**DEFAULTS, **user_input}
+    options[CONF_OUTPUT_PATH] = options[CONF_OUTPUT_PATH].strip()
+    options[CONF_EXCLUDED_INTEGRATIONS] = sorted(
+        {d.strip() for d in options[CONF_EXCLUDED_INTEGRATIONS] if d.strip()}
+    )
+    errors: dict[str, str] = {}
+    if is_forbidden_path(hass, options[CONF_OUTPUT_PATH]):
+        errors[CONF_OUTPUT_PATH] = "forbidden_www"
+    return options, errors
 
 
 class EntityInventoryConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -29,23 +93,16 @@ class EntityInventoryConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         errors: dict[str, str] = {}
+        values = DEFAULTS
         if user_input is not None:
-            path = user_input[CONF_OUTPUT_PATH].strip()
-            if is_forbidden_path(self.hass, path):
-                errors[CONF_OUTPUT_PATH] = "forbidden_www"
-            else:
+            values, errors = _validate(self.hass, user_input)
+            if not errors:
                 return self.async_create_entry(
-                    title="Entity Inventory",
-                    data={},
-                    options={CONF_OUTPUT_PATH: path},
+                    title="Entity Inventory", data={}, options=values
                 )
 
         return self.async_show_form(
-            step_id="user",
-            data_schema=self.add_suggested_values_to_schema(
-                SCHEMA, user_input or {CONF_OUTPUT_PATH: DEFAULT_OUTPUT_PATH}
-            ),
-            errors=errors,
+            step_id="user", data_schema=_schema(self.hass, values), errors=errors
         )
 
     @staticmethod
@@ -55,24 +112,18 @@ class EntityInventoryConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class EntityInventoryOptionsFlow(OptionsFlow):
-    """Modification du chemin de sortie."""
+    """Modification du chemin et des filtres."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         errors: dict[str, str] = {}
+        values = {**DEFAULTS, **self.config_entry.options}
         if user_input is not None:
-            path = user_input[CONF_OUTPUT_PATH].strip()
-            if is_forbidden_path(self.hass, path):
-                errors[CONF_OUTPUT_PATH] = "forbidden_www"
-            else:
-                return self.async_create_entry(data={CONF_OUTPUT_PATH: path})
+            values, errors = _validate(self.hass, user_input)
+            if not errors:
+                return self.async_create_entry(data=values)
 
-        current = self.config_entry.options.get(CONF_OUTPUT_PATH, DEFAULT_OUTPUT_PATH)
         return self.async_show_form(
-            step_id="init",
-            data_schema=self.add_suggested_values_to_schema(
-                SCHEMA, user_input or {CONF_OUTPUT_PATH: current}
-            ),
-            errors=errors,
+            step_id="init", data_schema=_schema(self.hass, values), errors=errors
         )

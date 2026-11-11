@@ -37,7 +37,17 @@ Copier `custom_components/entity_inventory/` dans `/config/custom_components/` e
 - chemin relatif = relatif à `/config`, chemin absolu accepté (ex. `/share/entity_inventory.yaml`) ;
 - **`/config/www` est refusé** : ce dossier est servi sans authentification sur `/local/`.
 
-Le chemin se modifie ensuite via *Configurer*.
+| Option | Défaut | Effet |
+|---|---|---|
+| Inclure les entités de configuration | non | calibrations, mode LED, boutons « vérifier la mise à jour »… |
+| Inclure les entités de diagnostic | non | signal, LQI, tension, dernière vue… — **les batteries sont toujours gardées** |
+| Intégrations à exclure | aucune | ex. `proxmoxve`, `sentinel` : aucune de leurs entités n'est exportée |
+
+Le fichier indique dans `meta.filters` et `meta.counts.excluded` ce qui a été filtré : l'IA sait qu'une entité absente peut exister. Les entités désactivées ne sont jamais listées (seulement comptées).
+
+Ordre de grandeur sur une installation réelle de 2 400 entités : **470 Ko → 175 Ko** (≈ 146k → 54k tokens) avec les filtres par défaut.
+
+Tout se modifie ensuite via *Configurer*.
 
 ## Utilisation
 
@@ -78,7 +88,6 @@ areas:         # area_id → appareils → entités (+ entités sans appareil)
             preset_modes: [comfort, eco, away, none]
 unassigned:    # appareils / entités sans pièce
 no_registry:   # entités YAML sans unique_id
-disabled:      # entités désactivées (à ne pas utiliser)
 ```
 
 | Exporté | Jamais exporté |

@@ -7,6 +7,16 @@ DEFAULT_OUTPUT_PATH = "entity_inventory.yaml"  # relatif au dossier /config
 
 SERVICE_EXPORT = "export"
 
+# Filtres (options de l'intégration)
+CONF_INCLUDE_CONFIG = "include_config"
+CONF_INCLUDE_DIAGNOSTIC = "include_diagnostic"
+CONF_EXCLUDED_INTEGRATIONS = "excluded_integrations"
+DEFAULT_INCLUDE_CONFIG = False
+DEFAULT_INCLUDE_DIAGNOSTIC = False
+
+# Gardées même quand leur catégorie est exclue (utiles aux automatisations)
+ALWAYS_KEEP_DEVICE_CLASSES: frozenset[str] = frozenset({"battery"})
+
 # Attributs « structurels » : ils décrivent ce qu'une entité SAIT faire,
 # jamais ce qu'elle mesure. Liste blanche volontaire : tout le reste
 # (états, coordonnées GPS, IP, valeurs courantes…) n'est jamais exporté.
