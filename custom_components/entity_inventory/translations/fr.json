@@ -1,0 +1,51 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Entity Inventory",
+        "description": "Exporte la structure de Home Assistant (pièces, appareils, entités, valeurs possibles) dans un fichier YAML à fournir à une IA. Aucun état n'est exporté.",
+        "data": {
+          "output_path": "Fichier de sortie"
+        },
+        "data_description": {
+          "output_path": "Chemin relatif à /config ou chemin absolu (ex. /share/entity_inventory.yaml). /config/www est interdit car public."
+        }
+      }
+    },
+    "error": {
+      "forbidden_www": "Le dossier /config/www est accessible sans authentification : choisissez un autre emplacement."
+    },
+    "abort": {
+      "single_instance_allowed": "Entity Inventory est déjà configuré."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Entity Inventory",
+        "data": {
+          "output_path": "Fichier de sortie"
+        },
+        "data_description": {
+          "output_path": "Chemin relatif à /config ou chemin absolu (ex. /share/entity_inventory.yaml). /config/www est interdit car public."
+        }
+      }
+    },
+    "error": {
+      "forbidden_www": "Le dossier /config/www est accessible sans authentification : choisissez un autre emplacement."
+    }
+  },
+  "entity": {
+    "button": {
+      "export": {
+        "name": "Exporter l'inventaire"
+      }
+    }
+  },
+  "services": {
+    "export": {
+      "name": "Exporter l'inventaire",
+      "description": "Génère le fichier YAML d'inventaire (structure uniquement, sans états)."
+    }
+  }
+}

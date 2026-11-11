@@ -1,0 +1,51 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Entity Inventory",
+        "description": "Exports the Home Assistant structure (areas, devices, entities, possible values) to a YAML file meant to be given to an AI. No states are exported.",
+        "data": {
+          "output_path": "Output file"
+        },
+        "data_description": {
+          "output_path": "Path relative to /config or absolute (e.g. /share/entity_inventory.yaml). /config/www is forbidden because it is public."
+        }
+      }
+    },
+    "error": {
+      "forbidden_www": "/config/www is served without authentication: choose another location."
+    },
+    "abort": {
+      "single_instance_allowed": "Entity Inventory is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Entity Inventory",
+        "data": {
+          "output_path": "Output file"
+        },
+        "data_description": {
+          "output_path": "Path relative to /config or absolute (e.g. /share/entity_inventory.yaml). /config/www is forbidden because it is public."
+        }
+      }
+    },
+    "error": {
+      "forbidden_www": "/config/www is served without authentication: choose another location."
+    }
+  },
+  "entity": {
+    "button": {
+      "export": {
+        "name": "Export inventory"
+      }
+    }
+  },
+  "services": {
+    "export": {
+      "name": "Export inventory",
+      "description": "Generates the YAML inventory file (structure only, no states)."
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "entity": {
+    "button": {
+      "export": {
+        "default": "mdi:file-export-outline"
+      }
+    }
+  },
+  "services": {
+    "export": {
+      "service": "mdi:file-export-outline"
+    }
+  }
+}

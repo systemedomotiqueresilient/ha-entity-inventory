@@ -1,0 +1,14 @@
+{
+  "domain": "entity_inventory",
+  "name": "Entity Inventory",
+  "codeowners": ["@GITHUB_USER"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/GITHUB_USER/ha-entity-inventory",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/GITHUB_USER/ha-entity-inventory/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.1.0"
+}
