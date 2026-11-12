@@ -82,7 +82,8 @@ actions:
     target: {entity_id: climate.mobile}
     data: {preset_mode: "Comfort 1"}
 """)
-    assert result == {"valid": True, "errors": [], "warnings": [], "entities_checked": 2}
+    assert result == {"valid": True, "errors": [], "warnings": [], "entities_checked": 2,
+                      "actions_checked": 1}
 
 
 async def test_wrong_values(hass: HomeAssistant, setup) -> None:
@@ -228,3 +229,25 @@ actions:
     assert "« notify.iphone_tel » est une entité, pas une action" in errors[0]
     assert "notify.send_message" in errors[0] and "notify.mobile_app_iphone_tel" in errors[0]
     assert "« switch.prise » est une entité" in errors[1]
+
+
+async def test_nothing_checked_is_not_valid(hass: HomeAssistant, setup) -> None:
+    """Cas réel : brouillon.yaml contenant l'appel validate complet → faux « valid: true »."""
+    wrapped = (
+        "action: entity_inventory.validate\n"
+        "data:\n"
+        "  yaml: |\n"
+        "    triggers:\n"
+        "      - trigger: numeric_state\n"
+        "        entity_id: sensor.inconnu\n"
+        "        below: 15\n"
+    )
+    for text, expected in (
+        (wrapped, "appel à entity_inventory.validate lui-même"),
+        ("", "le texte ou le fichier est vide"),
+        ("# rien que des commentaires\n", "le texte ou le fichier est vide"),
+        ("alias: test\ndescription: rien\n", "aucune entité ni action trouvée"),
+    ):
+        result = await _validate(hass, text)
+        assert result["valid"] is False, text
+        assert expected in result["errors"][0], (text, result)

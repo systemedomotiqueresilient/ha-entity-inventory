@@ -83,6 +83,8 @@ data:
 
 Le chemin est relatif à `/config` (ou absolu dans `/share`). Seuls les fichiers `.yaml`/`.yml` sont acceptés, jamais `secrets.yaml`.
 
+Le fichier contient **uniquement** le YAML de l'IA (`alias:`, `triggers:`, `actions:`…), pas l'appel `action: entity_inventory.validate` ni de bloc `raw`. La réponse indique `entities_checked` et `actions_checked` : un YAML où rien n'a pu être vérifié est déclaré invalide plutôt que faussement correct.
+
 **2. Par copier-coller.** Les outils de développement évaluent les templates `{{ … }}` *avant* d'appeler l'action : un YAML qui contient `{{ trigger.to_state.name }}` échoue avec `'trigger' is undefined`. Entourez-le d'un bloc `raw` :
 
 ```yaml

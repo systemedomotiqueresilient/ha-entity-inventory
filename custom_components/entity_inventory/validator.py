@@ -109,13 +109,14 @@ def async_validate_yaml(hass: HomeAssistant, text: str) -> dict[str, Any]:
     warnings: list[str] = []
     checked: set[str] = set()
     legacy: set[str] = set()
+    actions_checked = 0
     ent_reg = er.async_get(hass)
 
     try:
         documents = [doc for doc in yaml.load_all(text, Loader=_Loader) if doc is not None]
     except yaml.YAMLError as err:
         return {"valid": False, "errors": [f"YAML illisible : {err}"], "warnings": [],
-                "entities_checked": 0}
+                "entities_checked": 0, "actions_checked": 0}
 
     def check_entity(entity_id: str, where: str) -> None:
         if entity_id in checked:
@@ -160,6 +161,14 @@ def async_validate_yaml(hass: HomeAssistant, text: str) -> dict[str, Any]:
             service = service or (node.get("service") if isinstance(node.get("service"), str) else None)
             if service and not _is_template(service) and "." in service:
                 domain, name = service.split(".", 1)
+                if domain == "entity_inventory" and name == "validate":
+                    errors.append(
+                        f"{where} : ce YAML est un appel à entity_inventory.validate lui-même. "
+                        "Le fichier (ou le champ yaml) doit contenir uniquement le YAML produit "
+                        "par l'IA, sans action/data/yaml ni bloc raw."
+                    )
+                    continue
+                actions_checked += 1
                 if not hass.services.has_service(domain, name):
                     if hass.states.get(service) is not None:
                         # Erreur classique : appeler une entité comme si c'était une action
@@ -228,9 +237,17 @@ def async_validate_yaml(hass: HomeAssistant, text: str) -> dict[str, Any]:
                         )
 
     warnings.extend(f"Syntaxe ancienne : {item}" for item in sorted(legacy))
+    if not documents:
+        errors.append("Rien à vérifier : le texte ou le fichier est vide (ou ne contient que des commentaires).")
+    elif not checked and not actions_checked and not errors:
+        errors.append(
+            "Rien à vérifier : aucune entité ni action trouvée. Le YAML de l'IA est-il bien "
+            "présent (automatisation, script ou package) ?"
+        )
     return {
         "valid": not errors,
         "errors": errors,
         "warnings": warnings,
         "entities_checked": len(checked),
+        "actions_checked": actions_checked,
     }
