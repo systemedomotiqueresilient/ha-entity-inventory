@@ -95,7 +95,9 @@ data:
         entity_id: sensor.0x30fb10fffe74e11b_battery
         below: 15
     actions:
-      - action: notify.mobile_app_iphone
+      - action: notify.send_message
+        target:
+          entity_id: notify.iphone
         data:
           message: "{{ trigger.to_state.name }} : {{ trigger.to_state.state }} %"
     {% endraw %}
@@ -103,7 +105,7 @@ data:
 
 La réponse liste, sans rien modifier :
 
-- **erreurs** : entité ou action inexistante (y compris dans les templates `states('…')`), `preset_mode` / `option` / `hvac_mode` hors des valeurs permises (avec la liste correcte), `off` non quoté interprété comme booléen, `numeric_state` sur une entité non numérique (`group.*`, `binary_sensor`…) ;
+- **erreurs** : entité ou action inexistante, entité appelée comme une action (ex. `action: notify.mon_telephone` au lieu de `notify.send_message`) (y compris dans les templates `states('…')`), `preset_mode` / `option` / `hvac_mode` hors des valeurs permises (avec la liste correcte), `off` non quoté interprété comme booléen, `numeric_state` sur une entité non numérique (`group.*`, `binary_sensor`…) ;
 - **avertissements** : entité désactivée, action appliquée à une entité d'un autre domaine, syntaxe ancienne (`platform:`, `service:`, `trigger:` au lieu de `triggers:`…).
 
 Ce que la validation ne peut pas voir : une liste incomplète (« toutes les piles » à qui il en manque) ou une logique discutable. Relisez quand même.

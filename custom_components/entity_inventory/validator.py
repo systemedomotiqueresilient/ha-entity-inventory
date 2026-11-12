@@ -161,7 +161,22 @@ def async_validate_yaml(hass: HomeAssistant, text: str) -> dict[str, Any]:
             if service and not _is_template(service) and "." in service:
                 domain, name = service.split(".", 1)
                 if not hass.services.has_service(domain, name):
-                    errors.append(f"{where} : action inexistante « {service} »")
+                    if hass.states.get(service) is not None:
+                        # Erreur classique : appeler une entité comme si c'était une action
+                        if domain == "notify":
+                            hint = (
+                                f"utiliser « action: notify.send_message » avec "
+                                f"« target: entity_id: {service} »"
+                            )
+                            if hass.services.has_service("notify", f"mobile_app_{name}"):
+                                hint += f", ou l'ancienne action « notify.mobile_app_{name} »"
+                        else:
+                            hint = "une action s'écrit domaine.service (ex. switch.turn_on) avec cette entité en target"
+                        errors.append(
+                            f"{where} : « {service} » est une entité, pas une action — {hint}"
+                        )
+                    else:
+                        errors.append(f"{where} : action inexistante « {service} »")
                 data = node.get("data") if isinstance(node.get("data"), dict) else {}
                 target = node.get("target") if isinstance(node.get("target"), dict) else {}
                 targets = [

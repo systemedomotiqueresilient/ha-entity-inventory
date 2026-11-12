@@ -206,3 +206,25 @@ async def test_path_refused(hass: HomeAssistant, setup) -> None:
     with pytest.raises(ServiceValidationError, match="Lecture impossible"):
         await hass.services.async_call(DOMAIN, "validate", {"path": "absent.yaml"},
                                        blocking=True, return_response=True)
+
+
+async def test_notify_entity_called_as_action(hass: HomeAssistant, setup) -> None:
+    """Cas réel Copilot : service: notify.mon_telephone (c'est une entité)."""
+    hass.states.async_set("notify.iphone_tel", "unknown")
+    hass.services.async_register("notify", "send_message", lambda call: None)
+    hass.services.async_register("notify", "mobile_app_iphone_tel", lambda call: None)
+    hass.states.async_set("switch.prise", "off")
+    result = await _validate(hass, """
+actions:
+  - action: notify.iphone_tel
+    data: {message: test}
+  - action: switch.prise
+  - action: notify.send_message
+    target: {entity_id: notify.iphone_tel}
+    data: {message: test}
+""")
+    errors = result["errors"]
+    assert len(errors) == 2
+    assert "« notify.iphone_tel » est une entité, pas une action" in errors[0]
+    assert "notify.send_message" in errors[0] and "notify.mobile_app_iphone_tel" in errors[0]
+    assert "« switch.prise » est une entité" in errors[1]

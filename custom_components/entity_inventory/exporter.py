@@ -76,6 +76,8 @@ HEADER = """\
 #    avec scene.create plutôt que d'imposer une valeur fixe.
 #  - Pour une catégorie ("toutes les piles", "toutes les fenêtres"), parcours TOUT le fichier :
 #    filtre par domaine + device_class (+ unit), dans toutes les pièces et dans "unassigned".
+#  - Une entité notify.* n'est PAS une action : on l'appelle avec "action: notify.send_message"
+#    et "target: entity_id: notify.xxx" (données : message, title).
 #  - numeric_state exige une entité à état numérique (sensor, number, input_number…) :
 #    jamais un group.*, binary_sensor ou switch. Pour un minimum, utiliser un capteur min_max.
 #  - Le YAML produit peut être vérifié dans Home Assistant avec l'action entity_inventory.validate.
