@@ -70,7 +70,11 @@
       "fields": {
         "yaml": {
           "name": "YAML",
-          "description": "Le YAML à vérifier, tel que l'IA l'a produit."
+          "description": "Le YAML à vérifier. S'il contient des templates Jinja (comme trigger.to_state), l'entourer d'un bloc Jinja « raw … endraw » (voir README), ou utiliser « Fichier »."
+        },
+        "path": {
+          "name": "Fichier",
+          "description": "Fichier .yaml à vérifier, relatif à /config (ex. ia/brouillon.yaml) ou dans /share. Les templates n'y sont jamais évalués."
         }
       }
     }

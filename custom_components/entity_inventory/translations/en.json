@@ -70,7 +70,11 @@
       "fields": {
         "yaml": {
           "name": "YAML",
-          "description": "The YAML to check, as produced by the AI."
+          "description": "The YAML to check. If it contains Jinja templates (such as trigger.to_state), wrap it in a Jinja \"raw … endraw\" block (see README), or use \"File\"."
+        },
+        "path": {
+          "name": "File",
+          "description": ".yaml file to check, relative to /config (e.g. ai/draft.yaml) or in /share. Templates in it are never rendered."
         }
       }
     }

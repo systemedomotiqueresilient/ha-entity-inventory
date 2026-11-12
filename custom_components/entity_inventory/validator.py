@@ -9,7 +9,9 @@ from typing import Any
 import yaml
 
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import entity_registry as er
+import os
 
 ENTITY_RE = re.compile(r"^[a-z0-9_]+\.[a-z0-9_]+$")
 TEMPLATE_REFS = (
@@ -34,6 +36,31 @@ VALUE_CHECKS: dict[tuple[str, str], tuple[str, str]] = {
     ("media_player", "select_source"): ("source", "source_list"),
 }
 NON_NUMERIC_DOMAINS = {"group", "binary_sensor", "switch", "light", "input_boolean"}
+
+
+def resolve_draft_path(hass: HomeAssistant, raw: str) -> str:
+    """Fichier à valider : .yaml/.yml dans /config ou /share, jamais secrets.yaml."""
+    path = os.path.realpath(hass.config.path(raw.strip()))
+    roots = [os.path.realpath(hass.config.config_dir), "/share"]
+    inside = any(path == root or path.startswith(root + os.sep) for root in roots)
+    if (
+        not inside
+        or not path.endswith((".yaml", ".yml"))
+        or os.path.basename(path) == "secrets.yaml"
+    ):
+        raise ServiceValidationError(
+            f"Chemin refusé : {raw} (fichier .yaml dans /config ou /share, hors secrets.yaml)"
+        )
+    return path
+
+
+def read_draft(path: str) -> str:
+    """Lecture (à exécuter dans l'executor)."""
+    try:
+        with open(path, encoding="utf-8") as file:
+            return file.read()
+    except OSError as err:
+        raise ServiceValidationError(f"Lecture impossible de {path} : {err}") from err
 
 
 class _Loader(yaml.SafeLoader):

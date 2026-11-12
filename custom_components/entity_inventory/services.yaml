@@ -2,7 +2,10 @@ export:
 validate:
   fields:
     yaml:
-      required: true
       selector:
         text:
           multiline: true
+    path:
+      example: ia/brouillon.yaml
+      selector:
+        text:

@@ -71,17 +71,34 @@ Puis, dans la conversation avec l'IA : *« Voici l'inventaire de ma maison. Écr
 
 ## Vérifier ce que l'IA a écrit
 
-*Outils de développement → Actions → `entity_inventory.validate`*, coller le YAML produit par l'IA :
+L'action `entity_inventory.validate` contrôle un YAML produit par une IA contre votre instance réelle. Deux façons de lui donner le YAML :
+
+**1. Par fichier (recommandé).** Enregistrez la réponse de l'IA, par exemple dans `/config/ia/brouillon.yaml` (éditeur de fichiers, Samba…), puis dans *Outils de développement → Actions* :
+
+```yaml
+action: entity_inventory.validate
+data:
+  path: ia/brouillon.yaml
+```
+
+Le chemin est relatif à `/config` (ou absolu dans `/share`). Seuls les fichiers `.yaml`/`.yml` sont acceptés, jamais `secrets.yaml`.
+
+**2. Par copier-coller.** Les outils de développement évaluent les templates `{{ … }}` *avant* d'appeler l'action : un YAML qui contient `{{ trigger.to_state.name }}` échoue avec `'trigger' is undefined`. Entourez-le d'un bloc `raw` :
 
 ```yaml
 action: entity_inventory.validate
 data:
   yaml: |
+    {% raw %}
     triggers:
       - trigger: numeric_state
-        entity_id: group.batteries_zigbee
+        entity_id: sensor.0x30fb10fffe74e11b_battery
         below: 15
-    …
+    actions:
+      - action: notify.mobile_app_iphone
+        data:
+          message: "{{ trigger.to_state.name }} : {{ trigger.to_state.state }} %"
+    {% endraw %}
 ```
 
 La réponse liste, sans rien modifier :

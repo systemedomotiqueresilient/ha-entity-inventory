@@ -142,3 +142,67 @@ actions:
     assert any("autre domaine" in w for w in result["warnings"])
     broken = await _validate(hass, "actions: [unclosed")
     assert broken["valid"] is False and broken["errors"][0].startswith("YAML illisible")
+
+
+# --- Cas réel : outils de développement (le YAML passe par le moteur de templates) --- #
+from homeassistant.core import Context
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.script import Script
+
+COPILOT_3 = """triggers:
+  - trigger: numeric_state
+    entity_id:
+      - sensor.pile_porte
+      - sensor.30fb10fffe74e11b_battery
+    below: 15
+actions:
+  - action: notify.iphone
+    data:
+      message: "{{ trigger.to_state.name }} est à {{ trigger.to_state.state }} %."
+"""
+
+
+async def _run_like_devtools(hass: HomeAssistant, data: dict) -> dict:
+    """Même chemin que Outils de développement → Actions (websocket execute_script)."""
+    script = Script(
+        hass,
+        cv.SCRIPT_SCHEMA([{"action": f"{DOMAIN}.validate", "data": data, "response_variable": "r"}]),
+        "devtools",
+        DOMAIN,
+    )
+    run = await script.async_run(context=Context())
+    return run.variables["r"]
+
+
+async def test_devtools_template_error_reproduced(hass: HomeAssistant, setup) -> None:
+    with pytest.raises(HomeAssistantError, match="trigger"):
+        await _run_like_devtools(hass, {"yaml": COPILOT_3})
+
+
+async def test_devtools_raw_block(hass: HomeAssistant, setup) -> None:
+    result = await _run_like_devtools(hass, {"yaml": "{% raw %}\n" + COPILOT_3 + "{% endraw %}"})
+    assert result["valid"] is False
+    assert result["errors"] == [
+        "triggers[0] : entité inexistante « sensor.30fb10fffe74e11b_battery »"
+    ]
+    assert result["warnings"] == []
+
+
+async def test_devtools_path(hass: HomeAssistant, setup) -> None:
+    draft = Path(hass.config.path("ia"))
+    draft.mkdir(exist_ok=True)
+    (draft / "brouillon.yaml").write_text(COPILOT_3, encoding="utf-8")
+    result = await _run_like_devtools(hass, {"path": "ia/brouillon.yaml"})
+    assert result["valid"] is False and len(result["errors"]) == 1
+
+
+async def test_path_refused(hass: HomeAssistant, setup) -> None:
+    Path(hass.config.path("secrets.yaml")).write_text("a: b\n", encoding="utf-8")
+    for bad in ("secrets.yaml", "../etc/passwd", "/etc/hosts.yaml", "notes.txt"):
+        with pytest.raises(ServiceValidationError, match="Chemin refusé"):
+            await hass.services.async_call(DOMAIN, "validate", {"path": bad},
+                                           blocking=True, return_response=True)
+    with pytest.raises(ServiceValidationError, match="Lecture impossible"):
+        await hass.services.async_call(DOMAIN, "validate", {"path": "absent.yaml"},
+                                       blocking=True, return_response=True)

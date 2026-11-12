@@ -11,9 +11,9 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
-from .const import ATTR_YAML, DOMAIN, SERVICE_EXPORT, SERVICE_VALIDATE
+from .const import ATTR_PATH, ATTR_YAML, DOMAIN, SERVICE_EXPORT, SERVICE_VALIDATE
 from .exporter import async_export, export_options, resolve_output_path
-from .validator import async_validate_yaml
+from .validator import async_validate_yaml, read_draft, resolve_draft_path
 
 PLATFORMS: list[Platform] = [Platform.BUTTON]
 
@@ -46,13 +46,28 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     )
 
     async def _handle_validate(call: ServiceCall) -> ServiceResponse:
-        return async_validate_yaml(hass, call.data[ATTR_YAML])
+        # Fichier : rien n'est évalué comme template en chemin (cas du YAML qui
+        # contient {{ trigger… }}, que les outils de développement interpréteraient).
+        if ATTR_PATH in call.data:
+            path = resolve_draft_path(hass, call.data[ATTR_PATH])
+            text = await hass.async_add_executor_job(read_draft, path)
+        else:
+            text = call.data[ATTR_YAML]
+        return async_validate_yaml(hass, text)
 
     hass.services.async_register(
         DOMAIN,
         SERVICE_VALIDATE,
         _handle_validate,
-        schema=vol.Schema({vol.Required(ATTR_YAML): cv.string}),
+        schema=vol.All(
+            vol.Schema(
+                {
+                    vol.Exclusive(ATTR_YAML, "source"): cv.string,
+                    vol.Exclusive(ATTR_PATH, "source"): cv.string,
+                }
+            ),
+            cv.has_at_least_one_key(ATTR_YAML, ATTR_PATH),
+        ),
         supports_response=SupportsResponse.ONLY,
     )
     return True
