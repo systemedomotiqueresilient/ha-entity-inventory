@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
@@ -36,7 +38,7 @@ from .const import (
     DEFAULT_REDACT_EMAILS,
     DOMAIN,
 )
-from .exporter import default_output_path, is_forbidden_path
+from .exporter import default_output_path, destination_problem, is_forbidden_path
 
 DEFAULTS: dict[str, Any] = {
     CONF_OUTPUT_PATH: DEFAULT_OUTPUT_PATH,
@@ -84,7 +86,7 @@ def _schema(hass: HomeAssistant, values: dict[str, Any]) -> vol.Schema:
     )
 
 
-def _validate(hass: HomeAssistant, user_input: dict[str, Any]) -> tuple[dict, dict]:
+async def _validate(hass: HomeAssistant, user_input: dict[str, Any]) -> tuple[dict, dict]:
     """Nettoie la saisie ; renvoie (options, erreurs)."""
     options = {**DEFAULTS, CONF_OUTPUT_PATH: default_output_path(hass), **user_input}
     options[CONF_OUTPUT_PATH] = options[CONF_OUTPUT_PATH].strip()
@@ -94,6 +96,10 @@ def _validate(hass: HomeAssistant, user_input: dict[str, Any]) -> tuple[dict, di
     errors: dict[str, str] = {}
     if is_forbidden_path(hass, options[CONF_OUTPUT_PATH]):
         errors[CONF_OUTPUT_PATH] = "forbidden_www"
+    else:
+        path = Path(os.path.abspath(hass.config.path(options[CONF_OUTPUT_PATH])))
+        if problem := await hass.async_add_executor_job(destination_problem, hass, path):
+            errors[CONF_OUTPUT_PATH] = problem[0]
     return options, errors
 
 
@@ -108,7 +114,7 @@ class EntityInventoryConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         values = {**DEFAULTS, CONF_OUTPUT_PATH: default_output_path(self.hass)}
         if user_input is not None:
-            values, errors = _validate(self.hass, user_input)
+            values, errors = await _validate(self.hass, user_input)
             if not errors:
                 return self.async_create_entry(
                     title="Entity Inventory", data={}, options=values
@@ -133,7 +139,7 @@ class EntityInventoryOptionsFlow(OptionsFlow):
         errors: dict[str, str] = {}
         values = {**DEFAULTS, **self.config_entry.options}
         if user_input is not None:
-            values, errors = _validate(self.hass, user_input)
+            values, errors = await _validate(self.hass, user_input)
             if not errors:
                 return self.async_create_entry(data=values)
 

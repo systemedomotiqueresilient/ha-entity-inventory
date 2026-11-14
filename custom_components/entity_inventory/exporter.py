@@ -66,6 +66,9 @@ HEADER = """\
 #    absente d'ici peut exister. Ne jamais inventer d'entity_id.
 #  - Les entités désactivées ne sont pas listées : elles n'existent pas à l'exécution.
 #  - "integration" absent = intégration de l'appareil, ou celle du domaine de l'entity_id.
+#  - "via" = passerelle par laquelle l'appareil communique (coordinateur Zigbee2MQTT, pont
+#    Zigbee, hub…). Deux appareils de même intégration (ex. mqtt) peuvent passer par des
+#    passerelles différentes : c'est dans celle-ci qu'on renomme ou supprime l'appareil.
 #  - "[email]" dans un nom = adresse e-mail masquée (l'entity_id, lui, reste exact).
 #
 # Consignes pour rédiger du YAML à partir de ce fichier :
@@ -121,6 +124,31 @@ def is_forbidden_path(hass: HomeAssistant, raw: str) -> bool:
     path = os.path.abspath(hass.config.path(raw))
     www = os.path.abspath(hass.config.path("www"))
     return path == www or path.startswith(www + os.sep)
+
+
+def destination_problem(hass: HomeAssistant, path: Path) -> tuple[str, str] | None:
+    """Vérifie que le fichier pourra être écrit : (code, dossier) en cas de problème.
+
+    Un dossier manquant n'est créé que sous /config : ailleurs, c'est presque toujours
+    une erreur (ex. /share sur une installation sans Supervisor) et le créer donnerait
+    un fichier perdu dans le conteneur. Fait des E/S : à appeler dans l'exécuteur.
+    """
+    directory = path.parent
+    if path.is_dir():
+        return "is_dir", str(path)
+    if not directory.exists():
+        config_dir = os.path.realpath(hass.config.config_dir)
+        if not os.path.realpath(directory).startswith(config_dir + os.sep):
+            return "dir_missing", str(directory)
+        existing = directory  # sous /config : le premier parent existant doit être inscriptible
+        while not existing.exists():
+            existing = existing.parent
+        directory = existing
+    if not directory.is_dir():
+        return "dir_missing", str(directory)
+    if not os.access(directory, os.W_OK | os.X_OK):
+        return "dir_not_writable", str(directory)
+    return None
 
 
 # --------------------------------------------------------------------------- #
@@ -353,6 +381,8 @@ def async_build_inventory(
         _set(item, "manufacturer", device.manufacturer)
         _set(item, "model", device.model)
         _set(item, "integration", _device_integration(device))
+        if device.via_device_id and (via := dev_reg.async_get(device.via_device_id)):
+            _set(item, "via", _txt(_device_name(via)))
         _set(item, "labels", device.labels)
         item["entities"] = device_entities
         _bucket(device.area_id).setdefault("devices", []).append(item)

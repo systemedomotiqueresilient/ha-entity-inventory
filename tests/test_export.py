@@ -132,6 +132,7 @@ def _radiateur(data: dict) -> dict:
 
 async def test_export_defaults(hass: HomeAssistant, tmp_path: Path) -> None:
     await _populate(hass)
+    (tmp_path / "sub").mkdir()
     await _setup(hass, str(tmp_path / "sub" / "inventory.yaml"))
     data, text, resp = await _export(hass)
     print(text)
@@ -228,9 +229,9 @@ async def test_options_flow(hass: HomeAssistant, tmp_path: Path) -> None:
     result = await hass.config_entries.options.async_configure(result["flow_id"], {CONF_OUTPUT_PATH: "www"})
     assert result["errors"] == {CONF_OUTPUT_PATH: "forbidden_www"}
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {CONF_OUTPUT_PATH: "/share/b.yaml", CONF_INCLUDE_DIAGNOSTIC: True}
+        result["flow_id"], {CONF_OUTPUT_PATH: str(tmp_path / "b.yaml"), CONF_INCLUDE_DIAGNOSTIC: True}
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     await hass.async_block_till_done()
-    assert entry.options[CONF_OUTPUT_PATH] == "/share/b.yaml"
+    assert entry.options[CONF_OUTPUT_PATH] == str(tmp_path / "b.yaml")
     assert entry.options[CONF_INCLUDE_DIAGNOSTIC] is True

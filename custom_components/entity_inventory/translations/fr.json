@@ -23,7 +23,10 @@
       }
     },
     "error": {
-      "forbidden_www": "Le dossier /config/www est accessible sans authentification : choisissez un autre emplacement."
+      "forbidden_www": "Le dossier /config/www est accessible sans authentification : choisissez un autre emplacement.",
+      "dir_missing": "Le dossier de destination n'existe pas. Hors de /config, aucun dossier n'est créé automatiquement : /share n'existe que sur Home Assistant OS et les installations Supervised.",
+      "dir_not_writable": "Home Assistant ne peut pas écrire dans le dossier de destination.",
+      "is_dir": "Ce chemin est un dossier : ajoutez un nom de fichier, par exemple entity_inventory.yaml."
     },
     "abort": {
       "single_instance_allowed": "Entity Inventory est déjà configuré."
@@ -53,7 +56,10 @@
       }
     },
     "error": {
-      "forbidden_www": "Le dossier /config/www est accessible sans authentification : choisissez un autre emplacement."
+      "forbidden_www": "Le dossier /config/www est accessible sans authentification : choisissez un autre emplacement.",
+      "dir_missing": "Le dossier de destination n'existe pas. Hors de /config, aucun dossier n'est créé automatiquement : /share n'existe que sur Home Assistant OS et les installations Supervised.",
+      "dir_not_writable": "Home Assistant ne peut pas écrire dans le dossier de destination.",
+      "is_dir": "Ce chemin est un dossier : ajoutez un nom de fichier, par exemple entity_inventory.yaml."
     }
   },
   "entity": {

@@ -23,7 +23,10 @@
       }
     },
     "error": {
-      "forbidden_www": "/config/www is served without authentication: choose another location."
+      "forbidden_www": "/config/www is served without authentication: choose another location.",
+      "dir_missing": "The destination folder does not exist. Outside /config, folders are never created automatically: /share only exists on Home Assistant OS and Supervised installations.",
+      "dir_not_writable": "Home Assistant cannot write to the destination folder.",
+      "is_dir": "This path is a folder: add a file name, for example entity_inventory.yaml."
     },
     "abort": {
       "single_instance_allowed": "Entity Inventory is already configured."
@@ -53,7 +56,10 @@
       }
     },
     "error": {
-      "forbidden_www": "/config/www is served without authentication: choose another location."
+      "forbidden_www": "/config/www is served without authentication: choose another location.",
+      "dir_missing": "The destination folder does not exist. Outside /config, folders are never created automatically: /share only exists on Home Assistant OS and Supervised installations.",
+      "dir_not_writable": "Home Assistant cannot write to the destination folder.",
+      "is_dir": "This path is a folder: add a file name, for example entity_inventory.yaml."
     }
   },
   "entity": {

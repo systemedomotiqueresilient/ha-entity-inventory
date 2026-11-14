@@ -36,6 +36,7 @@ Copier `custom_components/entity_inventory/` dans `/config/custom_components/` e
 - défaut : `/share/entity_inventory.yaml` sur HAOS / Supervised (accessible par Samba, hors de portée de Watchman), `/config/entity_inventory.yaml` sinon ;
 - chemin relatif = relatif à `/config`, chemin absolu accepté (ex. `/share/entity_inventory.yaml`) ;
 - **`/config/www` est refusé** : ce dossier est servi sans authentification sur `/local/`.
+- le dossier est vérifié dès la saisie : hors de `/config`, il doit déjà exister (sur une installation Docker ou Core, `/share` n'existe pas et n'est jamais créé). Sous `/config`, un sous-dossier manquant est créé au premier export.
 
 | Option | Défaut | Effet |
 |---|---|---|
@@ -67,6 +68,8 @@ automation:
     actions:
       - action: entity_inventory.export
 ```
+
+Si un export échoue (dossier disparu, disque en lecture seule…), une **notification persistante** l'indique, et le téléphone choisi dans les options est prévenu : sans cela, un export nocturne raté passerait inaperçu et l'IA travaillerait sur un inventaire périmé. Le dossier est aussi contrôlé à chaque démarrage. Une seule alerte par situation ; elle disparaît au premier export réussi.
 
 Puis, dans la conversation avec l'IA : *« Voici l'inventaire de ma maison. Écris un package qui passe tous les radiateurs de l'étage en eco quand l'alarme est armée. »*
 
@@ -137,6 +140,7 @@ areas:         # area_id → appareils → entités (+ entités sans appareil)
       - name: Radiateur salon
         manufacturer: NodOn
         integration: zha
+        via: Coordinateur Zigbee   # passerelle : c'est là qu'on renomme ou supprime l'appareil
         entities:
           - id: climate.radiateur_salon
             hvac_modes: [heat, 'off']
@@ -148,7 +152,7 @@ no_registry:   # entités YAML sans unique_id
 | Exporté | Jamais exporté |
 |---|---|
 | entity_id, nom, pièce, étage, étiquettes, alias | états courants, historique |
-| appareil : nom, fabricant, modèle, intégration | coordonnées GPS, IP, attributs dynamiques |
+| appareil : nom, fabricant, modèle, intégration, passerelle (`via`) | coordonnées GPS, IP, attributs dynamiques |
 | device_class, unité, state_class, catégorie | identifiants internes d'appareils |
 | `options`, `hvac_modes`, `preset_modes`, `event_types`, min/max… | |
 

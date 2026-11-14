@@ -21,7 +21,8 @@ from homeassistant.helpers.typing import ConfigType
 
 from .alerts import notification_id
 from .const import ATTR_PATH, ATTR_YAML, DOMAIN, SERVICE_EXPORT, SERVICE_VALIDATE
-from .exporter import async_export, export_options, resolve_output_path
+from .exporter import resolve_output_path
+from .runner import ALERT_EXPORT, async_check_destination, async_run_export
 from .validator import async_validate_yaml, read_draft, resolve_draft_path
 from .watchman import async_check as async_check_watchman
 from .watchman import issue_id as watchman_issue_id
@@ -42,10 +43,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         ]
         if not entries:
             raise HomeAssistantError("Entity Inventory n'est pas configuré")
-        entry = entries[0]
-        path = resolve_output_path(hass, entry)
-        result = await async_export(hass, path, export_options(entry))
-        async_check_watchman(hass, entry, path)
+        result = await async_run_export(hass, entries[0])
         return result if call.return_response else None
 
     hass.services.async_register(
@@ -91,11 +89,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(entry.add_update_listener(_async_reload))
 
     @callback
-    def _check_watchman(_hass: HomeAssistant) -> None:
+    def _check_at_start(_hass: HomeAssistant) -> None:
         async_check_watchman(hass, entry, resolve_output_path(hass, entry))
+        entry.async_create_task(
+            hass, async_check_destination(hass, entry), f"{DOMAIN} vérification du dossier"
+        )
 
     # Après le démarrage : Watchman peut être chargé après nous
-    entry.async_on_unload(async_at_started(hass, _check_watchman))
+    entry.async_on_unload(async_at_started(hass, _check_at_start))
     return True
 
 
@@ -107,7 +108,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Suppression de l'intégration : retirer la réparation éventuelle."""
     ir.async_delete_issue(hass, DOMAIN, watchman_issue_id(entry))
-    persistent_notification.async_dismiss(hass, notification_id(entry, "watchman"))
+    for key in ("watchman", ALERT_EXPORT):
+        persistent_notification.async_dismiss(hass, notification_id(entry, key))
 
 
 async def _async_reload(hass: HomeAssistant, entry: ConfigEntry) -> None:
