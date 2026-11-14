@@ -102,6 +102,25 @@ def _is_template(value: Any) -> bool:
     return isinstance(value, str) and "{{" in value
 
 
+UPDATE_WARNING = (
+    "{where} : « {what} » déclenche une mise à jour automatique. Déconseillé : une mise à jour "
+    "peut casser l'installation (intégration incompatible, migration, redémarrage) et doit rester "
+    "une décision humaine, prise quand l'occupant peut réagir. Préférer une notification "
+    "« mise à jour disponible » et installer à la main."
+)
+
+
+def _is_update_action(domain: str, name: str, data: dict[str, Any]) -> bool:
+    """Actions qui installent une mise à jour (Home Assistant, modules, firmwares)."""
+    if (domain, name) == ("update", "install"):
+        return True
+    if domain == "hassio" and "update" in name:  # hassio.addon_update…
+        return True
+    # Zigbee2MQTT : mise à jour OTA d'un appareil via MQTT
+    topic = data.get("topic")
+    return domain == "mqtt" and isinstance(topic, str) and "ota_update/update" in topic
+
+
 @callback
 def async_validate_yaml(hass: HomeAssistant, text: str) -> dict[str, Any]:
     """Analyse le YAML et renvoie erreurs (bloquantes) et avertissements."""
@@ -169,6 +188,9 @@ def async_validate_yaml(hass: HomeAssistant, text: str) -> dict[str, Any]:
                     )
                     continue
                 actions_checked += 1
+                node_data = node.get("data") if isinstance(node.get("data"), dict) else {}
+                if _is_update_action(domain, name, node_data):
+                    warnings.append(UPDATE_WARNING.format(where=where, what=service))
                 if not hass.services.has_service(domain, name):
                     if hass.states.get(service) is not None:
                         # Erreur classique : appeler une entité comme si c'était une action

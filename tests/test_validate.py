@@ -251,3 +251,49 @@ async def test_nothing_checked_is_not_valid(hass: HomeAssistant, setup) -> None:
         result = await _validate(hass, text)
         assert result["valid"] is False, text
         assert expected in result["errors"][0], (text, result)
+
+
+async def test_update_automation_warned(hass: HomeAssistant, setup) -> None:
+    """Tutoriels « mises à jour automatiques » : avertir sans interdire."""
+    for domain, service in (("update", "install"), ("hassio", "addon_update"),
+                            ("mqtt", "publish"), ("notify", "send_message")):
+        hass.services.async_register(domain, service, lambda call: None)
+    hass.states.async_set("update.home_assistant_core_update", "on")
+    hass.states.async_set("notify.tel", "unknown")
+    result = await _validate(hass, """
+triggers:
+  - trigger: time
+    at: "03:00:00"
+actions:
+  - action: update.install
+    target: {entity_id: update.home_assistant_core_update}
+  - action: hassio.addon_update
+    data: {addon: core_mosquitto}
+  - action: mqtt.publish
+    data: {topic: zigbee2mqtt/bridge/request/device/ota_update/update, payload: prise}
+  - action: mqtt.publish
+    data: {topic: zigbee2mqtt/prise/set, payload: '{"state": "ON"}'}
+""")
+    assert result["valid"] is True  # décision laissée à l'occupant
+    updates = [w for w in result["warnings"] if "mise à jour automatique" in w]
+    assert len(updates) == 3
+    assert "« update.install »" in updates[0] and "« hassio.addon_update »" in updates[1]
+
+    # Alternative recommandée : une simple notification ne déclenche rien
+    result = await _validate(hass, """
+triggers:
+  - trigger: state
+    entity_id: update.home_assistant_core_update
+    to: "on"
+actions:
+  - action: notify.send_message
+    target: {entity_id: notify.tel}
+    data: {message: Mise à jour disponible}
+""")
+    assert result["valid"] is True and result["warnings"] == []
+
+
+async def test_header_discourages_update_automation(hass: HomeAssistant, setup, tmp_path: Path) -> None:
+    await hass.services.async_call(DOMAIN, "export", {}, blocking=True)
+    text = (tmp_path / "i.yaml").read_text(encoding="utf-8")
+    assert "ne JAMAIS les automatiser" in text and "décision humaine" in text
