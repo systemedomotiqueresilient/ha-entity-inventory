@@ -33,7 +33,7 @@ Copier `custom_components/entity_inventory/` dans `/config/custom_components/` e
 
 *Paramètres → Appareils et services → Ajouter une intégration → Entity Inventory*, puis choisir le fichier de sortie :
 
-- défaut : `/config/entity_inventory.yaml` ;
+- défaut : `/share/entity_inventory.yaml` sur HAOS / Supervised (accessible par Samba, hors de portée de Watchman), `/config/entity_inventory.yaml` sinon ;
 - chemin relatif = relatif à `/config`, chemin absolu accepté (ex. `/share/entity_inventory.yaml`) ;
 - **`/config/www` est refusé** : ce dossier est servi sans authentification sur `/local/`.
 
@@ -68,6 +68,15 @@ automation:
 ```
 
 Puis, dans la conversation avec l'IA : *« Voici l'inventaire de ma maison. Écris un package qui passe tous les radiateurs de l'étage en eco quand l'alarme est armée. »*
+
+## Cohabitation avec Watchman
+
+[Watchman](https://github.com/dummylabs/thewatchman) parcourt les fichiers `.yaml` de `/config` et signale toute entité citée qui est introuvable, indisponible ou inconnue. Un export placé dans `/config` y ajouterait des centaines de faux positifs (boutons, scènes, synthèse vocale… sont normalement `unknown`).
+
+- Par défaut sur HAOS, l'export va dans `/share` : Watchman ne le voit pas.
+- Si vous choisissez un chemin dans `/config` et que Watchman est installé, une **réparation** apparaît (*Paramètres → Système → Réparations*). Après confirmation, Entity Inventory ajoute le fichier aux fichiers ignorés de Watchman. Si vous changez le chemin plus tard, la réparation revient et remplace l'ancien chemin.
+- Rien n'est jamais modifié dans Watchman sans cette confirmation. Si son format de configuration n'est pas reconnu, rien n'est touché et la réparation l'indique.
+- Les brouillons à valider peuvent aussi aller dans `/share/ia/` (`path: /share/ia/brouillon.yaml`) pour la même raison.
 
 ## Vérifier ce que l'IA a écrit
 

@@ -6,14 +6,23 @@ import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse
+from homeassistant.core import (
+    HomeAssistant,
+    ServiceCall,
+    ServiceResponse,
+    SupportsResponse,
+    callback,
+)
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import config_validation as cv, issue_registry as ir
+from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
 
 from .const import ATTR_PATH, ATTR_YAML, DOMAIN, SERVICE_EXPORT, SERVICE_VALIDATE
 from .exporter import async_export, export_options, resolve_output_path
 from .validator import async_validate_yaml, read_draft, resolve_draft_path
+from .watchman import async_check as async_check_watchman
+from .watchman import issue_id as watchman_issue_id
 
 PLATFORMS: list[Platform] = [Platform.BUTTON]
 
@@ -32,9 +41,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         if not entries:
             raise HomeAssistantError("Entity Inventory n'est pas configuré")
         entry = entries[0]
-        result = await async_export(
-            hass, resolve_output_path(hass, entry), export_options(entry)
-        )
+        path = resolve_output_path(hass, entry)
+        result = await async_export(hass, path, export_options(entry))
+        async_check_watchman(hass, entry, path)
         return result if call.return_response else None
 
     hass.services.async_register(
@@ -77,12 +86,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Met en place le bouton d'export."""
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_reload))
+
+    @callback
+    def _check_watchman(_hass: HomeAssistant) -> None:
+        async_check_watchman(hass, entry, resolve_output_path(hass, entry))
+
+    # Après le démarrage : Watchman peut être chargé après nous
+    entry.async_on_unload(async_at_started(hass, _check_watchman))
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Décharge l'intégration."""
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Suppression de l'intégration : retirer la réparation éventuelle."""
+    ir.async_delete_issue(hass, DOMAIN, watchman_issue_id(entry))
 
 
 async def _async_reload(hass: HomeAssistant, entry: ConfigEntry) -> None:

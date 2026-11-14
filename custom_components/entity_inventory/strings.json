@@ -78,5 +78,22 @@
         }
       }
     }
+  },
+  "issues": {
+    "watchman_scans_export": {
+      "title": "Watchman scans the Entity Inventory export",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Add the export to Watchman's ignored files",
+            "description": "The export file {path} is inside /config: Watchman scans it and reports the many entities it lists that are normally unknown or unavailable (buttons, scenes, text-to-speech…) as errors. Click Submit to add this file to Watchman's ignored files. If you later change the export path, the fix will be offered again and will replace the old path. Alternatively, choose a path outside /config (e.g. /share/entity_inventory.yaml) in the Entity Inventory options."
+          }
+        },
+        "abort": {
+          "unsupported": "Watchman's configuration format was not recognised: nothing was changed. Add the path manually in Watchman's options (ignored files).",
+          "entry_missing": "Entity Inventory is no longer configured."
+        }
+      }
+    }
   }
 }

@@ -22,6 +22,7 @@ from homeassistant.helpers import (
     floor_registry as fr,
     label_registry as lr,
 )
+from homeassistant.helpers.hassio import is_hassio
 from homeassistant.util import dt as dt_util
 from homeassistant.util.file import write_utf8_file_atomic
 
@@ -35,6 +36,7 @@ from .const import (
     DEFAULT_INCLUDE_CONFIG,
     DEFAULT_INCLUDE_DIAGNOSTIC,
     DEFAULT_OUTPUT_PATH,
+    DEFAULT_OUTPUT_PATH_SUPERVISED,
     DEFAULT_REDACT_EMAILS,
     DOMAIN,
     STATIC_ATTRIBUTES,
@@ -102,9 +104,14 @@ def export_options(entry: ConfigEntry) -> dict[str, Any]:
 # --------------------------------------------------------------------------- #
 # Chemin de sortie
 # --------------------------------------------------------------------------- #
+def default_output_path(hass: HomeAssistant) -> str:
+    """/share sur HAOS/Supervised : hors de /config, donc hors de portée de Watchman."""
+    return DEFAULT_OUTPUT_PATH_SUPERVISED if is_hassio(hass) else DEFAULT_OUTPUT_PATH
+
+
 def resolve_output_path(hass: HomeAssistant, entry: ConfigEntry) -> Path:
     """Chemin absolu du fichier de sortie (relatif = relatif à /config)."""
-    raw = entry.options.get(CONF_OUTPUT_PATH) or DEFAULT_OUTPUT_PATH
+    raw = entry.options.get(CONF_OUTPUT_PATH) or default_output_path(hass)
     return Path(os.path.abspath(hass.config.path(raw)))
 
 

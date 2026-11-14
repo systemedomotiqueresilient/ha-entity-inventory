@@ -3,7 +3,8 @@
 DOMAIN = "entity_inventory"
 
 CONF_OUTPUT_PATH = "output_path"
-DEFAULT_OUTPUT_PATH = "entity_inventory.yaml"  # relatif au dossier /config
+DEFAULT_OUTPUT_PATH = "entity_inventory.yaml"  # relatif au dossier /config (hors HAOS)
+DEFAULT_OUTPUT_PATH_SUPERVISED = "/share/entity_inventory.yaml"  # HAOS / Supervised
 
 SERVICE_EXPORT = "export"
 SERVICE_VALIDATE = "validate"

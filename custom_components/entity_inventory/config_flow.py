@@ -33,7 +33,7 @@ from .const import (
     DEFAULT_REDACT_EMAILS,
     DOMAIN,
 )
-from .exporter import is_forbidden_path
+from .exporter import default_output_path, is_forbidden_path
 
 DEFAULTS: dict[str, Any] = {
     CONF_OUTPUT_PATH: DEFAULT_OUTPUT_PATH,
@@ -79,7 +79,7 @@ def _schema(hass: HomeAssistant, values: dict[str, Any]) -> vol.Schema:
 
 def _validate(hass: HomeAssistant, user_input: dict[str, Any]) -> tuple[dict, dict]:
     """Nettoie la saisie ; renvoie (options, erreurs)."""
-    options = {**DEFAULTS, **user_input}
+    options = {**DEFAULTS, CONF_OUTPUT_PATH: default_output_path(hass), **user_input}
     options[CONF_OUTPUT_PATH] = options[CONF_OUTPUT_PATH].strip()
     options[CONF_EXCLUDED_INTEGRATIONS] = sorted(
         {d.strip() for d in options[CONF_EXCLUDED_INTEGRATIONS] if d.strip()}
@@ -99,7 +99,7 @@ class EntityInventoryConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         errors: dict[str, str] = {}
-        values = DEFAULTS
+        values = {**DEFAULTS, CONF_OUTPUT_PATH: default_output_path(self.hass)}
         if user_input is not None:
             values, errors = _validate(self.hass, user_input)
             if not errors:

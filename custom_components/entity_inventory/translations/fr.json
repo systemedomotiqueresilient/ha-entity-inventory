@@ -78,5 +78,22 @@
         }
       }
     }
+  },
+  "issues": {
+    "watchman_scans_export": {
+      "title": "Watchman analyse l'export d'Entity Inventory",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Ajouter l'export aux fichiers ignorés de Watchman",
+            "description": "Le fichier d'export {path} est dans /config : Watchman le parcourt et signale comme « en erreur » les nombreuses entités qu'il cite et qui sont normalement inconnues ou indisponibles (boutons, scènes, synthèse vocale…). Cliquez sur Envoyer pour ajouter ce fichier aux fichiers ignorés de Watchman. Si vous changez plus tard le chemin de l'export, la correction sera proposée à nouveau et remplacera l'ancien chemin. Autre solution : choisir un chemin hors de /config (par exemple /share/entity_inventory.yaml) dans les options d'Entity Inventory."
+          }
+        },
+        "abort": {
+          "unsupported": "Le format de configuration de Watchman n'est pas reconnu : rien n'a été modifié. Ajoutez le chemin à la main dans les options de Watchman (fichiers ignorés).",
+          "entry_missing": "Entity Inventory n'est plus configuré."
+        }
+      }
+    }
   }
 }
