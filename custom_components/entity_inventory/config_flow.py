@@ -15,6 +15,8 @@ from homeassistant.config_entries import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.selector import (
     BooleanSelector,
+    EntitySelector,
+    EntitySelectorConfig,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
@@ -25,6 +27,7 @@ from .const import (
     CONF_EXCLUDED_INTEGRATIONS,
     CONF_INCLUDE_CONFIG,
     CONF_INCLUDE_DIAGNOSTIC,
+    CONF_NOTIFY_ENTITY,
     CONF_OUTPUT_PATH,
     CONF_REDACT_EMAILS,
     DEFAULT_INCLUDE_CONFIG,
@@ -73,6 +76,10 @@ def _schema(hass: HomeAssistant, values: dict[str, Any]) -> vol.Schema:
             vol.Required(
                 CONF_REDACT_EMAILS, default=values[CONF_REDACT_EMAILS]
             ): BooleanSelector(),
+            vol.Optional(
+                CONF_NOTIFY_ENTITY,
+                description={"suggested_value": values.get(CONF_NOTIFY_ENTITY)},
+            ): EntitySelector(EntitySelectorConfig(domain="notify")),
         }
     )
 

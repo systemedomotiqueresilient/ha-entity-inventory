@@ -23,6 +23,7 @@ from homeassistant.helpers import (
     label_registry as lr,
 )
 from homeassistant.helpers.hassio import is_hassio
+from homeassistant.loader import async_get_integration
 from homeassistant.util import dt as dt_util
 from homeassistant.util.file import write_utf8_file_atomic
 
@@ -199,7 +200,9 @@ def _short_name(full: str, device_name: str) -> str | None:
 
 @callback
 def async_build_inventory(
-    hass: HomeAssistant, options: Mapping[str, Any] | None = None
+    hass: HomeAssistant,
+    options: Mapping[str, Any] | None = None,
+    version: str | None = None,
 ) -> dict[str, Any]:
     """Construit l'inventaire (à appeler dans la boucle d'événements)."""
     options = options or {}
@@ -375,6 +378,7 @@ def async_build_inventory(
             bucket["entities"] = bucket.pop("entities")
     meta = {
         "generator": "entity_inventory",
+        "generator_version": version,
         "ha_version": HA_VERSION,
         "exported_at": dt_util.now().isoformat(timespec="seconds"),
         "language": hass.config.language,
@@ -460,7 +464,8 @@ async def async_export(
             f"Export refusé vers {path} : /config/www est public (servi sans authentification)"
         )
 
-    data = async_build_inventory(hass, options)
+    integration = await async_get_integration(hass, DOMAIN)
+    data = async_build_inventory(hass, options, str(integration.version))
 
     def _write() -> int:
         content = dump_inventory(data)

@@ -43,6 +43,7 @@ Copier `custom_components/entity_inventory/` dans `/config/custom_components/` e
 | Inclure les entités de diagnostic | non | signal, LQI, tension, dernière vue… — **les batteries sont toujours gardées** |
 | Intégrations à exclure | aucune | ex. `proxmoxve`, `sentinel`, `sentinel_report` : aucune de leurs entités n'est exportée |
 | Masquer les adresses e-mail | oui | toute adresse présente dans un nom devient `[email]` |
+| Téléphone à prévenir | aucun | entité `notify.*` (app Compagnon) prévenue quand une action est requise |
 
 Le fichier indique dans `meta.filters` et `meta.counts.excluded` ce qui a été filtré : l'IA sait qu'une entité absente peut exister. Les entités désactivées ne sont jamais listées (seulement comptées).
 
@@ -75,6 +76,7 @@ Puis, dans la conversation avec l'IA : *« Voici l'inventaire de ma maison. Écr
 
 - Par défaut sur HAOS, l'export va dans `/share` : Watchman ne le voit pas.
 - Si vous choisissez un chemin dans `/config` et que Watchman est installé, une **réparation** apparaît (*Paramètres → Système → Réparations*). Après confirmation, Entity Inventory ajoute le fichier aux fichiers ignorés de Watchman. Si vous changez le chemin plus tard, la réparation revient et remplace l'ancien chemin.
+- Pour ne pas la manquer parmi d'autres réparations, une **notification persistante** (avec un lien vers les réparations) est créée, et, si vous avez choisi un **téléphone à prévenir** dans les options (entité `notify.*` de l'app Compagnon), il reçoit une notification. Une seule fois par situation : pas de relance à chaque export ou redémarrage.
 - Rien n'est jamais modifié dans Watchman sans cette confirmation. Si son format de configuration n'est pas reconnu, rien n'est touché et la réparation l'indique.
 - Les brouillons à valider peuvent aussi aller dans `/share/ia/` (`path: /share/ia/brouillon.yaml`) pour la même raison.
 

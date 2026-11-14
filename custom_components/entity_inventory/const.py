@@ -16,6 +16,7 @@ CONF_INCLUDE_CONFIG = "include_config"
 CONF_INCLUDE_DIAGNOSTIC = "include_diagnostic"
 CONF_EXCLUDED_INTEGRATIONS = "excluded_integrations"
 CONF_REDACT_EMAILS = "redact_emails"
+CONF_NOTIFY_ENTITY = "notify_entity"
 DEFAULT_INCLUDE_CONFIG = False
 DEFAULT_INCLUDE_DIAGNOSTIC = False
 DEFAULT_REDACT_EMAILS = True

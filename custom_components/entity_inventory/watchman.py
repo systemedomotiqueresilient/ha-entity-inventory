@@ -19,6 +19,7 @@ from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
 
+from .alerts import async_clear, async_raise
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -85,8 +86,10 @@ def async_check(hass: HomeAssistant, entry: ConfigEntry, path: Path) -> None:
             translation_placeholders={"path": str(path)},
             data={"entry_id": entry.entry_id, "path": str(path)},
         )
+        async_raise(hass, entry, "watchman", str(path))
     else:
         ir.async_delete_issue(hass, DOMAIN, issue_id(entry))
+        async_clear(hass, entry, "watchman")
 
 
 @callback
@@ -115,5 +118,6 @@ def async_add_exception(hass: HomeAssistant, entry: ConfigEntry, path: Path) -> 
         entry, data={**entry.data, DATA_WATCHMAN_PATTERN: new_pattern}
     )
     ir.async_delete_issue(hass, DOMAIN, issue_id(entry))
+    async_clear(hass, entry, "watchman")
     _LOGGER.info("Watchman : %s ajouté aux fichiers ignorés", new_pattern)
     return True

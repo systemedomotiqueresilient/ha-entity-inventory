@@ -9,14 +9,16 @@
           "include_config": "Inclure les entités de configuration",
           "include_diagnostic": "Inclure les entités de diagnostic",
           "excluded_integrations": "Intégrations à exclure",
-          "redact_emails": "Masquer les adresses e-mail"
+          "redact_emails": "Masquer les adresses e-mail",
+          "notify_entity": "Téléphone à prévenir (optionnel)"
         },
         "data_description": {
           "output_path": "Chemin relatif à /config ou chemin absolu (ex. /share/entity_inventory.yaml). /config/www est interdit car public.",
           "include_config": "Réglages techniques (calibration, mode LED, bouton « vérifier la mise à jour »…). Rarement utiles pour écrire une automatisation, et volumineux.",
           "include_diagnostic": "Signal, LQI, tension, dernière vue… Les batteries sont toujours conservées, même si cette option est désactivée.",
           "excluded_integrations": "Intégrations dont aucune entité ne sera exportée (ex. proxmoxve, sentinel, sentinel_report). Réduit fortement la taille du fichier sur une grosse installation.",
-          "redact_emails": "Remplace toute adresse e-mail présente dans un nom (titre de compte repris par une intégration de surveillance, notification…) par [email]. Les entity_id restent inchangés."
+          "redact_emails": "Remplace toute adresse e-mail présente dans un nom (titre de compte repris par une intégration de surveillance, notification…) par [email]. Les entity_id restent inchangés.",
+          "notify_entity": "Entité de notification (ex. notify.mon_iphone de l'app Compagnon) prévenue quand une action est requise, par exemple une réparation Watchman. Une seule fois par situation. Une notification persistante est toujours créée."
         }
       }
     },
@@ -37,14 +39,16 @@
           "include_config": "Inclure les entités de configuration",
           "include_diagnostic": "Inclure les entités de diagnostic",
           "excluded_integrations": "Intégrations à exclure",
-          "redact_emails": "Masquer les adresses e-mail"
+          "redact_emails": "Masquer les adresses e-mail",
+          "notify_entity": "Téléphone à prévenir (optionnel)"
         },
         "data_description": {
           "output_path": "Chemin relatif à /config ou chemin absolu (ex. /share/entity_inventory.yaml). /config/www est interdit car public.",
           "include_config": "Réglages techniques (calibration, mode LED, bouton « vérifier la mise à jour »…). Rarement utiles pour écrire une automatisation, et volumineux.",
           "include_diagnostic": "Signal, LQI, tension, dernière vue… Les batteries sont toujours conservées, même si cette option est désactivée.",
           "excluded_integrations": "Intégrations dont aucune entité ne sera exportée (ex. proxmoxve, sentinel, sentinel_report). Réduit fortement la taille du fichier sur une grosse installation.",
-          "redact_emails": "Remplace toute adresse e-mail présente dans un nom (titre de compte repris par une intégration de surveillance, notification…) par [email]. Les entity_id restent inchangés."
+          "redact_emails": "Remplace toute adresse e-mail présente dans un nom (titre de compte repris par une intégration de surveillance, notification…) par [email]. Les entity_id restent inchangés.",
+          "notify_entity": "Entité de notification (ex. notify.mon_iphone de l'app Compagnon) prévenue quand une action est requise, par exemple une réparation Watchman. Une seule fois par situation. Une notification persistante est toujours créée."
         }
       }
     },

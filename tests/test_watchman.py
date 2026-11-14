@@ -111,3 +111,42 @@ async def test_default_path_on_haos(hass: HomeAssistant) -> None:
         assert default_output_path(hass) == "/share/entity_inventory.yaml"
     with patch("custom_components.entity_inventory.exporter.is_hassio", return_value=False):
         assert default_output_path(hass) == "entity_inventory.yaml"
+
+
+async def test_alerts_once_per_situation(hass: HomeAssistant) -> None:
+    from homeassistant.components import persistent_notification
+
+    sent = []
+    hass.services.async_register("notify", "send_message", lambda call: sent.append(call.data))
+    hass.states.async_set("notify.iphone", "unknown")
+    _watchman(hass, data={"ignored_files": []})
+    entry = MockConfigEntry(domain=DOMAIN, options={
+        CONF_OUTPUT_PATH: "entity_inventory.yaml", "notify_entity": "notify.iphone"})
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    notif_id = f"{DOMAIN}_watchman_{entry.entry_id}"
+    assert notif_id in persistent_notification._async_get_or_create_notifications(hass)
+    assert len(sent) == 1 and sent[0]["entity_id"] == "notify.iphone"
+    assert "Réparations" in sent[0]["message"] or "Repairs" in sent[0]["message"]
+
+    # Exports suivants : pas de nouvelle alerte, et pas de rechargement
+    for _ in range(3):
+        await hass.services.async_call(DOMAIN, "export", {}, blocking=True)
+    await hass.async_block_till_done()
+    assert len(sent) == 1
+
+    # Correction : notification retirée, situation oubliée
+    await _fix(hass, entry)
+    assert notif_id not in persistent_notification._async_get_or_create_notifications(hass)
+    assert not hass.config_entries.async_get_entry(entry.entry_id).data.get("alerted")
+
+
+async def test_meta_has_version(hass: HomeAssistant, tmp_path: Path) -> None:
+    import yaml as _yaml
+    entry = await _setup(hass, str(tmp_path / "e.yaml"))
+    await hass.services.async_call(DOMAIN, "export", {}, blocking=True)
+    meta = _yaml.safe_load((tmp_path / "e.yaml").read_text(encoding="utf-8"))["meta"]
+    from homeassistant.loader import async_get_integration
+    assert meta["generator_version"] == str((await async_get_integration(hass, DOMAIN)).version)

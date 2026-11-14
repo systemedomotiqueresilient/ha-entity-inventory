@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import voluptuous as vol
 
+from homeassistant.components import persistent_notification
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import Platform
 from homeassistant.core import (
@@ -18,6 +19,7 @@ from homeassistant.helpers import config_validation as cv, issue_registry as ir
 from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
 
+from .alerts import notification_id
 from .const import ATTR_PATH, ATTR_YAML, DOMAIN, SERVICE_EXPORT, SERVICE_VALIDATE
 from .exporter import async_export, export_options, resolve_output_path
 from .validator import async_validate_yaml, read_draft, resolve_draft_path
@@ -84,6 +86,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Met en place le bouton d'export."""
+    entry.runtime_data = dict(entry.options)  # pour ne recharger qu'au changement d'options
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_reload))
 
@@ -104,7 +107,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Suppression de l'intégration : retirer la réparation éventuelle."""
     ir.async_delete_issue(hass, DOMAIN, watchman_issue_id(entry))
+    persistent_notification.async_dismiss(hass, notification_id(entry, "watchman"))
 
 
 async def _async_reload(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    await hass.config_entries.async_reload(entry.entry_id)
+    if dict(entry.options) != getattr(entry, "runtime_data", None):
+        await hass.config_entries.async_reload(entry.entry_id)
