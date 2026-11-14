@@ -1,7 +1,7 @@
 # Entity Inventory
 
-[![Validate](https://github.com/GITHUB_USER/ha-entity-inventory/actions/workflows/validate.yml/badge.svg)](https://github.com/GITHUB_USER/ha-entity-inventory/actions/workflows/validate.yml)
-[![Release](https://img.shields.io/github/v/release/GITHUB_USER/ha-entity-inventory)](https://github.com/GITHUB_USER/ha-entity-inventory/releases)
+[![Validate](https://github.com/systemedomotiqueresilient/ha-entity-inventory/actions/workflows/validate.yml/badge.svg)](https://github.com/systemedomotiqueresilient/ha-entity-inventory/actions/workflows/validate.yml)
+[![Release](https://img.shields.io/github/v/release/systemedomotiqueresilient/ha-entity-inventory)](https://github.com/systemedomotiqueresilient/ha-entity-inventory/releases)
 
 **Donnez à une IA le plan de votre maison, pas les clés.**
 
@@ -17,11 +17,11 @@ Entity Inventory exporte la *structure* de votre Home Assistant — étages, pi�
 
 *Paramètres → Marketplace* → rechercher **Entity Inventory** → Installer.
 
-Tant que l'intégration n'est pas dans le catalogue par défaut : *Marketplace → ⋮ → Dépôts personnalisés* → `https://github.com/GITHUB_USER/ha-entity-inventory`, type **Intégration**.
+Tant que l'intégration n'est pas dans le catalogue par défaut : *Marketplace → ⋮ → Dépôts personnalisés* → `https://github.com/systemedomotiqueresilient/ha-entity-inventory`, type **Intégration**.
 
 ### HACS (avant 2026.11)
 
-[![Ouvrir dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=GITHUB_USER&repository=ha-entity-inventory&category=integration)
+[![Ouvrir dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=systemedomotiqueresilient&repository=ha-entity-inventory&category=integration)
 
 Ou *HACS → ⋮ → Dépôts personnalisés* → l'URL du dépôt, type **Intégration**.
 
