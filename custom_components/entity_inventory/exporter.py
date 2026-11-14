@@ -88,9 +88,11 @@ HEADER = """\
 #    jamais un group.*, binary_sensor ou switch. Pour un minimum, utiliser un capteur min_max.
 #  - Mises à jour (update.install, hassio.addon_update, OTA Zigbee…) : ne JAMAIS les automatiser.
 #    Une mise à jour peut casser l'installation et doit rester une décision humaine, prise quand
-#    l'occupant peut réagir. Si on te le demande, explique ce risque et propose plutôt une
-#    notification « mise à jour disponible » ; n'écris l'automatisation que si l'occupant
-#    confirme en connaissance de cause.
+#    l'occupant peut réagir. Si on te le demande, ta PREMIÈRE réponse ne contient AUCUN YAML
+#    d'installation : explique ce risque, propose une notification « mise à jour disponible »
+#    et demande à l'occupant s'il maintient sa demande. N'écris l'installation automatique
+#    qu'après sa confirmation explicite, jamais sur « all » ni sans cible, et avec sauvegarde
+#    préalable (backup: true). Signale aussi les automatisations existantes sur ce sujet.
 #  - Le YAML produit peut être vérifié dans Home Assistant avec l'action entity_inventory.validate.
 
 """

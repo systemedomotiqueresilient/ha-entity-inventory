@@ -296,4 +296,35 @@ actions:
 async def test_header_discourages_update_automation(hass: HomeAssistant, setup, tmp_path: Path) -> None:
     await hass.services.async_call(DOMAIN, "export", {}, blocking=True)
     text = (tmp_path / "i.yaml").read_text(encoding="utf-8")
-    assert "ne JAMAIS les automatiser" in text and "décision humaine" in text
+    assert "ne JAMAIS les automatiser" in text and "PREMIÈRE réponse ne contient AUCUN YAML" in text
+
+
+async def test_update_all_gemini_case(hass: HomeAssistant, setup) -> None:
+    """Cas réel Gemini : update.install sur entity_id: all, sans sauvegarde."""
+    hass.services.async_register("update", "install", lambda call: None)
+    hass.states.async_set("update.zigbee2mqtt_update", "on")
+    result = await _validate(hass, """
+alias: "Système - Installation automatique des mises à jour à 3h"
+trigger:
+  - platform: time
+    at: "03:00:00"
+action:
+  - action: update.install
+    target:
+      entity_id: all
+mode: single
+""")
+    warnings = " | ".join(result["warnings"])
+    assert result["valid"] is True
+    assert "TOUTES les mises à jour" in warnings
+    assert "backup: true" in warnings
+    assert "platform:" in warnings  # ancienne syntaxe toujours signalée
+
+    # Cible précise + sauvegarde : seul l'avertissement de principe reste
+    result = await _validate(hass, """
+actions:
+  - action: update.install
+    target: {entity_id: update.zigbee2mqtt_update}
+    data: {backup: true}
+""")
+    assert len(result["warnings"]) == 1 and "mise à jour automatique" in result["warnings"][0]

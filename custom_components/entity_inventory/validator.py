@@ -110,6 +110,27 @@ UPDATE_WARNING = (
 )
 
 
+UPDATE_ALL_WARNING = (
+    "{where} : « {what} » sans cible précise (entity_id: all ou aucune cible) installe TOUTES "
+    "les mises à jour d'un coup, y compris Home Assistant, le système et les firmwares. C'est le "
+    "cas le plus risqué : en cas d'échec, impossible de savoir laquelle a cassé l'installation."
+)
+UPDATE_NO_BACKUP_WARNING = (
+    "{where} : « update.install » sans « backup: true » : aucune sauvegarde ne sera faite avant "
+    "la mise à jour (pour les éléments qui le permettent)."
+)
+
+
+def _targets_everything(node: dict[str, Any], data: dict[str, Any]) -> bool:
+    """Cible absente, ou entity_id: all, dans target/data/racine."""
+    target = node.get("target") if isinstance(node.get("target"), dict) else {}
+    keys = ("entity_id", "device_id", "area_id", "floor_id", "label_id")
+    values = [src.get(k) for src in (target, data, node) for k in keys if src.get(k) is not None]
+    if not values:
+        return True
+    return any(v == "all" or (isinstance(v, list) and "all" in v) for v in values)
+
+
 def _is_update_action(domain: str, name: str, data: dict[str, Any]) -> bool:
     """Actions qui installent une mise à jour (Home Assistant, modules, firmwares)."""
     if (domain, name) == ("update", "install"):
@@ -191,6 +212,11 @@ def async_validate_yaml(hass: HomeAssistant, text: str) -> dict[str, Any]:
                 node_data = node.get("data") if isinstance(node.get("data"), dict) else {}
                 if _is_update_action(domain, name, node_data):
                     warnings.append(UPDATE_WARNING.format(where=where, what=service))
+                    if (domain, name) == ("update", "install"):
+                        if _targets_everything(node, node_data):
+                            warnings.append(UPDATE_ALL_WARNING.format(where=where, what=service))
+                        if node_data.get("backup") is not True:
+                            warnings.append(UPDATE_NO_BACKUP_WARNING.format(where=where))
                 if not hass.services.has_service(domain, name):
                     if hass.states.get(service) is not None:
                         # Erreur classique : appeler une entité comme si c'était une action

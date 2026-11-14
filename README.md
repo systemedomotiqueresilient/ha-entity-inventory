@@ -122,9 +122,9 @@ data:
 La réponse liste, sans rien modifier :
 
 - **erreurs** : entité ou action inexistante, entité appelée comme une action (ex. `action: notify.mon_telephone` au lieu de `notify.send_message`) (y compris dans les templates `states('…')`), `preset_mode` / `option` / `hvac_mode` hors des valeurs permises (avec la liste correcte), `off` non quoté interprété comme booléen, `numeric_state` sur une entité non numérique (`group.*`, `binary_sensor`…) ;
-- **avertissements** : entité désactivée, action appliquée à une entité d'un autre domaine, syntaxe ancienne (`platform:`, `service:`, `trigger:` au lieu de `triggers:`…), **mise à jour automatisée** (`update.install`, `hassio.addon_update`, OTA Zigbee2MQTT).
+- **avertissements** : entité désactivée, action appliquée à une entité d'un autre domaine, syntaxe ancienne (`platform:`, `service:`, `trigger:` au lieu de `triggers:`…), **mise à jour automatisée** (`update.install`, `hassio.addon_update`, OTA Zigbee2MQTT), avec un avertissement renforcé pour `update.install` sur `all` ou sans cible, et sans `backup: true`.
 
-> **Mises à jour : toujours une décision humaine.** Beaucoup de tutoriels proposent d'installer les mises à jour automatiquement, la nuit. Une mise à jour peut casser une intégration, exiger une migration ou un redémarrage : elle doit être lancée à la main, quand on peut réagir. L'en-tête de l'inventaire demande à l'IA de le déconseiller et de proposer une notification « mise à jour disponible » à la place ; la validation le signale par un avertissement. Rien n'est interdit : la décision reste à l'occupant.
+> **Mises à jour : toujours une décision humaine.** Beaucoup de tutoriels proposent d'installer les mises à jour automatiquement, la nuit. Une mise à jour peut casser une intégration, exiger une migration ou un redémarrage : elle doit être lancée à la main, quand on peut réagir. L'en-tête de l'inventaire demande à l'IA de ne fournir aucun YAML d'installation dans sa première réponse, de proposer une notification « mise à jour disponible » et d'attendre une confirmation explicite ; la validation le signale par un avertissement. Rien n'est interdit : la décision reste à l'occupant.
 
 Ce que la validation ne peut pas voir : une liste incomplète (« toutes les piles » à qui il en manque) ou une logique discutable. Relisez quand même.
 
