@@ -17,9 +17,11 @@ CONF_INCLUDE_DIAGNOSTIC = "include_diagnostic"
 CONF_EXCLUDED_INTEGRATIONS = "excluded_integrations"
 CONF_REDACT_EMAILS = "redact_emails"
 CONF_NOTIFY_ENTITY = "notify_entity"
+CONF_INCLUDE_PACKAGES = "include_packages"
 DEFAULT_INCLUDE_CONFIG = False
 DEFAULT_INCLUDE_DIAGNOSTIC = False
 DEFAULT_REDACT_EMAILS = True
+DEFAULT_INCLUDE_PACKAGES = True
 
 # Gardées même quand leur catégorie est exclue (utiles aux automatisations)
 ALWAYS_KEEP_DEVICE_CLASSES: frozenset[str] = frozenset({"battery"})

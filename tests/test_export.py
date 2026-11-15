@@ -213,6 +213,7 @@ async def test_config_flow(hass: HomeAssistant) -> None:
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["options"] == {
+        "include_packages": True,
         CONF_OUTPUT_PATH: "inv.yaml",
         CONF_INCLUDE_CONFIG: False,
         CONF_INCLUDE_DIAGNOSTIC: False,

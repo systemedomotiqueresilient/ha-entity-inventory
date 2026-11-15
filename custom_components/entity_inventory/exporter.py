@@ -13,7 +13,7 @@ import yaml
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import __version__ as HA_VERSION
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import CoreState, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import (
     area_registry as ar,
@@ -32,16 +32,19 @@ from .const import (
     CONF_EXCLUDED_INTEGRATIONS,
     CONF_INCLUDE_CONFIG,
     CONF_INCLUDE_DIAGNOSTIC,
+    CONF_INCLUDE_PACKAGES,
     CONF_OUTPUT_PATH,
     CONF_REDACT_EMAILS,
     DEFAULT_INCLUDE_CONFIG,
     DEFAULT_INCLUDE_DIAGNOSTIC,
+    DEFAULT_INCLUDE_PACKAGES,
     DEFAULT_OUTPUT_PATH,
     DEFAULT_OUTPUT_PATH_SUPERVISED,
     DEFAULT_REDACT_EMAILS,
     DOMAIN,
     STATIC_ATTRIBUTES,
 )
+from .packages import RawPackage, async_resolve_packages, scan_packages
 
 EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 
@@ -69,6 +72,13 @@ HEADER = """\
 #  - "via" = passerelle par laquelle l'appareil communique (coordinateur Zigbee2MQTT, pont
 #    Zigbee, hub…). Deux appareils de même intégration (ex. mqtt) peuvent passer par des
 #    passerelles différentes : c'est dans celle-ci qu'on renomme ou supprime l'appareil.
+#    Une passerelle sans entité exportée n'a pas sa propre entrée : elle n'existe pas moins.
+#  - "packages" = fichiers de packages YAML de l'instance : "defines" = entités qu'ils créent,
+#    "missing" = entités qu'ils citent et qui N'EXISTENT PLUS (package cassé : à signaler
+#    et à corriger), "disabled" = entités citées mais désactivées. Le contenu des fichiers
+#    n'est pas exporté : pour corriger un package, demande-le à l'occupant.
+#  - meta.ha_state: starting = export fait pendant le démarrage : des entités YAML et
+#    quelques valeurs peuvent manquer. Le signaler, et suggérer de refaire l'export.
 #  - "[email]" dans un nom = adresse e-mail masquée (l'entity_id, lui, reste exact).
 #
 # Consignes pour rédiger du YAML à partir de ce fichier :
@@ -109,6 +119,7 @@ def export_options(entry: ConfigEntry) -> dict[str, Any]:
             entry.options.get(CONF_EXCLUDED_INTEGRATIONS) or []
         ),
         CONF_REDACT_EMAILS: entry.options.get(CONF_REDACT_EMAILS, DEFAULT_REDACT_EMAILS),
+        CONF_INCLUDE_PACKAGES: entry.options.get(CONF_INCLUDE_PACKAGES, DEFAULT_INCLUDE_PACKAGES),
     }
 
 
@@ -238,8 +249,12 @@ def async_build_inventory(
     hass: HomeAssistant,
     options: Mapping[str, Any] | None = None,
     version: str | None = None,
+    raw_packages: list[RawPackage] | None | bool = False,
 ) -> dict[str, Any]:
-    """Construit l'inventaire (à appeler dans la boucle d'événements)."""
+    """Construit l'inventaire (à appeler dans la boucle d'événements).
+
+    raw_packages : False = section non demandée, None = configuration illisible.
+    """
     options = options or {}
     include_config = options.get(CONF_INCLUDE_CONFIG, DEFAULT_INCLUDE_CONFIG)
     include_diagnostic = options.get(CONF_INCLUDE_DIAGNOSTIC, DEFAULT_INCLUDE_DIAGNOSTIC)
@@ -418,6 +433,7 @@ def async_build_inventory(
         "generator_version": version,
         "ha_version": HA_VERSION,
         "exported_at": dt_util.now().isoformat(timespec="seconds"),
+        "ha_state": "running" if hass.state is CoreState.running else "starting",
         "language": hass.config.language,
         "temperature_unit": hass.config.units.temperature_unit,
         "filters": {
@@ -426,6 +442,7 @@ def async_build_inventory(
             "always_kept_device_classes": sorted(ALWAYS_KEEP_DEVICE_CLASSES),
             "emails_in_names": "redacted" if redact_emails else "kept",
             "excluded_integrations": sorted(excluded_integrations),
+            "packages": "included" if raw_packages is not False else "excluded",
         },
         "counts": {
             "floors": len(floors),
@@ -450,12 +467,21 @@ def async_build_inventory(
                 stack.extend(current)
     labels = {key: value for key, value in labels.items() if key in used_labels}
 
+    packages: dict[str, Any] = {}
+    if raw_packages is None:
+        meta["packages_error"] = "configuration.yaml illisible : section packages omise"
+    elif raw_packages:
+        packages = async_resolve_packages(hass, raw_packages, _txt)
+        meta["counts"]["packages"] = len(packages)
+        meta["counts"]["packages_with_missing"] = sum(1 for p in packages.values() if "missing" in p)
+
     data: dict[str, Any] = {"meta": _clean(meta)}
     _set(data, "floors", floors)
     _set(data, "labels", labels)
     _set(data, "areas", areas)
     _set(data, "unassigned", unassigned)
     _set(data, "no_registry", no_registry)
+    _set(data, "packages", packages)
     return data
 
 
@@ -502,7 +528,10 @@ async def async_export(
         )
 
     integration = await async_get_integration(hass, DOMAIN)
-    data = async_build_inventory(hass, options, str(integration.version))
+    raw_packages: list[RawPackage] | None | bool = False
+    if (options or {}).get(CONF_INCLUDE_PACKAGES, DEFAULT_INCLUDE_PACKAGES):
+        raw_packages = await hass.async_add_executor_job(scan_packages, hass.config.config_dir)
+    data = async_build_inventory(hass, options, str(integration.version), raw_packages)
 
     def _write() -> int:
         content = dump_inventory(data)

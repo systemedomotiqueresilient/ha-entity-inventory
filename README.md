@@ -44,6 +44,7 @@ Copier `custom_components/entity_inventory/` dans `/config/custom_components/` e
 | Inclure les entités de diagnostic | non | signal, LQI, tension, dernière vue… — **les batteries sont toujours gardées** |
 | Intégrations à exclure | aucune | ex. `proxmoxve`, `sentinel`, `sentinel_report` : aucune de leurs entités n'est exportée |
 | Masquer les adresses e-mail | oui | toute adresse présente dans un nom devient `[email]` |
+| Analyser les packages | oui | liste les fichiers de packages, ce qu'ils créent et ce qu'ils citent qui n'existe plus |
 | Téléphone à prévenir | aucun | entité `notify.*` (app Compagnon) prévenue quand une action est requise |
 
 Le fichier indique dans `meta.filters` et `meta.counts.excluded` ce qui a été filtré : l'IA sait qu'une entité absente peut exister. Les entités désactivées ne sont jamais listées (seulement comptées).
@@ -149,7 +150,42 @@ areas:         # area_id → appareils → entités (+ entités sans appareil)
             preset_modes: [comfort, eco, away, none]
 unassigned:    # appareils / entités sans pièce
 no_registry:   # entités YAML sans unique_id
+packages:      # fichiers de packages : ce qu'ils créent, ce qu'ils citent qui a disparu
+  derivee_wc:
+    file: packages/derivee_wc.yaml
+    description: Package : Dérivées WC        # première ligne de commentaire du fichier
+    defines: [sensor.tdeg_wc_sonoff_package]
+    missing: [sensor.0x00124b002a50b200_temperature]   # → package cassé
 ```
+
+## Packages
+
+Une IA ne répare que ce qu'on lui montre. Quand une sonde est remplacée, tous les packages qui la citent cassent en silence, et rien n'indique à l'IA qu'ils existent. La section `packages` les lui désigne : pour chaque fichier déclaré dans `homeassistant: packages:` (quel que soit le dossier, `!include_dir_named`, `!include_dir_merge_named` ou bloc direct), elle donne :
+
+- `defines` : les entités que le fichier crée (inutile de les recréer ailleurs, source des doublons en `_2`) ;
+- `missing` : les entités citées qui **n'existent plus** ;
+- `disabled` : les entités citées mais désactivées ;
+- `description` : la première ligne de commentaire du fichier.
+
+Le **contenu des fichiers n'est jamais exporté**, seulement leur nom et des `entity_id`. Les fichiers sont lus en lecture seule avec le chargeur de Home Assistant ; les valeurs de `!secret` ne sortent jamais. Si `configuration.yaml` est illisible, la section est omise (`meta.packages_error`) sans bloquer l'export.
+
+### Convention de nommage conseillée
+
+Deux habitudes rendent cette section bien plus utile, à l'IA comme à vous :
+
+1. **Un nom de fichier qui dit la pièce et la fonction** : `wc_derivees.yaml`, `appartement_temperature_moyenne.yaml` plutôt que `derivee_wc.yaml` ou `test2.yaml`.
+2. **Une première ligne de commentaire** qui décrit le package, reprise telle quelle :
+
+```yaml
+# Package : WC — dérivées de température et d'humidité (sonde SNZB-02P)
+sensor:
+  - platform: derivative
+    ...
+```
+
+## État de démarrage
+
+Un export lancé pendant le démarrage de Home Assistant (par exemple par une automatisation déclenchée au démarrage) peut être incomplet : entités YAML sans `unique_id` pas encore créées, quelques valeurs absentes. Il est marqué `meta.ha_state: starting`, et l'en-tête demande à l'IA de le signaler.
 
 | Exporté | Jamais exporté |
 |---|---|

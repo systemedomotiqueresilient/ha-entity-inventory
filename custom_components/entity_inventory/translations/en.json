@@ -10,7 +10,8 @@
           "include_diagnostic": "Include diagnostic entities",
           "excluded_integrations": "Integrations to exclude",
           "redact_emails": "Hide e-mail addresses",
-          "notify_entity": "Phone to notify (optional)"
+          "notify_entity": "Phone to notify (optional)",
+          "include_packages": "Analyse packages"
         },
         "data_description": {
           "output_path": "Path relative to /config or absolute (e.g. /share/entity_inventory.yaml). /config/www is forbidden because it is public.",
@@ -18,7 +19,8 @@
           "include_diagnostic": "Signal, LQI, voltage, last seen… Batteries are always kept, even when this option is off.",
           "excluded_integrations": "Integrations whose entities will not be exported at all (e.g. proxmoxve, sentinel, sentinel_report). Greatly reduces the file size on large installations.",
           "redact_emails": "Replaces any e-mail address found in a name (account title echoed by a monitoring integration, notifier…) with [email]. Entity IDs are left unchanged.",
-          "notify_entity": "Notify entity (e.g. notify.my_iphone from the Companion app) alerted when action is required, such as a Watchman repair. Once per situation. A persistent notification is always created."
+          "notify_entity": "Notify entity (e.g. notify.my_iphone from the Companion app) alerted when action is required, such as a Watchman repair. Once per situation. A persistent notification is always created.",
+          "include_packages": "Lists each YAML package file (name and first comment line, never its content) with the entities it creates and the entities it cites that no longer exist. The AI can then spot broken packages by itself."
         }
       }
     },
@@ -43,7 +45,8 @@
           "include_diagnostic": "Include diagnostic entities",
           "excluded_integrations": "Integrations to exclude",
           "redact_emails": "Hide e-mail addresses",
-          "notify_entity": "Phone to notify (optional)"
+          "notify_entity": "Phone to notify (optional)",
+          "include_packages": "Analyse packages"
         },
         "data_description": {
           "output_path": "Path relative to /config or absolute (e.g. /share/entity_inventory.yaml). /config/www is forbidden because it is public.",
@@ -51,7 +54,8 @@
           "include_diagnostic": "Signal, LQI, voltage, last seen… Batteries are always kept, even when this option is off.",
           "excluded_integrations": "Integrations whose entities will not be exported at all (e.g. proxmoxve, sentinel, sentinel_report). Greatly reduces the file size on large installations.",
           "redact_emails": "Replaces any e-mail address found in a name (account title echoed by a monitoring integration, notifier…) with [email]. Entity IDs are left unchanged.",
-          "notify_entity": "Notify entity (e.g. notify.my_iphone from the Companion app) alerted when action is required, such as a Watchman repair. Once per situation. A persistent notification is always created."
+          "notify_entity": "Notify entity (e.g. notify.my_iphone from the Companion app) alerted when action is required, such as a Watchman repair. Once per situation. A persistent notification is always created.",
+          "include_packages": "Lists each YAML package file (name and first comment line, never its content) with the entities it creates and the entities it cites that no longer exist. The AI can then spot broken packages by itself."
         }
       }
     },
