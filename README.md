@@ -72,6 +72,28 @@ automation:
 
 Si un export échoue (dossier disparu, disque en lecture seule…), une **notification persistante** l'indique, et le téléphone choisi dans les options est prévenu : sans cela, un export nocturne raté passerait inaperçu et l'IA travaillerait sur un inventaire périmé. Le dossier est aussi contrôlé à chaque démarrage. Une seule alerte par situation ; elle disparaît au premier export réussi.
 
+### Export ciblé
+
+Pour ne confier à l'IA que ce dont elle a besoin, l'action accepte une cible :
+
+```yaml
+action: entity_inventory.export
+data:
+  areas: [salle_de_bain]      # pièces (area_id)
+  floors: [etage]             # étages : toutes leurs pièces
+  labels: [chauffage]         # étiquettes portées par l'entité ou son appareil
+  domains: [climate]          # domaines d'entités
+```
+
+- Dans un même critère, une valeur suffit (`areas: [wc, couloir]` = l'une ou l'autre) ; entre critères, tous doivent être remplis (`areas` + `domains` = les thermostats de ces pièces).
+- Le résultat va dans un **fichier séparé** nommé d'après la cible (`entity_inventory_salle_de_bain.yaml`) : l'export complet n'est pas modifié.
+- L'en-tête complet est conservé, et `meta.scope` indique à l'IA que l'inventaire est **partiel** : elle sait qu'une entité absente peut exister ailleurs, et qu'il faut l'export complet pour une catégorie entière ou pour repérer un conflit.
+- Seuls les packages qui créent ou citent une entité de la cible sont listés.
+- Une pièce, un étage ou une étiquette inconnus sont refusés avec la liste des valeurs possibles, plutôt que de produire un fichier vide.
+- `write: false` n'écrit rien : l'inventaire est seulement renvoyé dans la réponse de l'action, à copier depuis les outils de développement.
+
+Le débutant donne l'export complet ; l'utilisateur plus avancé choisit ce qu'il transmet.
+
 Puis, dans la conversation avec l'IA : *« Voici l'inventaire de ma maison. Écris un package qui passe tous les radiateurs de l'étage en eco quand l'alarme est armée. »*
 
 ## Cohabitation avec Watchman
@@ -79,7 +101,7 @@ Puis, dans la conversation avec l'IA : *« Voici l'inventaire de ma maison. Écr
 [Watchman](https://github.com/dummylabs/thewatchman) parcourt les fichiers `.yaml` de `/config` et signale toute entité citée qui est introuvable, indisponible ou inconnue. Un export placé dans `/config` y ajouterait des centaines de faux positifs (boutons, scènes, synthèse vocale… sont normalement `unknown`).
 
 - Par défaut sur HAOS, l'export va dans `/share` : Watchman ne le voit pas.
-- Si vous choisissez un chemin dans `/config` et que Watchman est installé, une **réparation** apparaît (*Paramètres → Système → Réparations*). Après confirmation, Entity Inventory ajoute le fichier aux fichiers ignorés de Watchman. Si vous changez le chemin plus tard, la réparation revient et remplace l'ancien chemin.
+- Si vous choisissez un chemin dans `/config` et que Watchman est installé, une **réparation** apparaît (*Paramètres → Système → Réparations*). Après confirmation, Entity Inventory ajoute aux fichiers ignorés de Watchman un motif qui couvre l'export complet et les exports ciblés (`entity_inventory*.yaml`). Une exception posée avant la 0.7.0 avec le chemin exact est remplacée par ce motif via la même réparation. Si vous changez le chemin plus tard, la réparation revient et remplace l'ancien chemin.
 - Pour ne pas la manquer parmi d'autres réparations, une **notification persistante** (avec un lien vers les réparations) est créée, et, si vous avez choisi un **téléphone à prévenir** dans les options (entité `notify.*` de l'app Compagnon), il reçoit une notification. Une seule fois par situation : pas de relance à chaque export ou redémarrage.
 - Rien n'est jamais modifié dans Watchman sans cette confirmation. Si son format de configuration n'est pas reconnu, rien n'est touché et la réparation l'indique.
 - Les brouillons à valider peuvent aussi aller dans `/share/ia/` (`path: /share/ia/brouillon.yaml`) pour la même raison.

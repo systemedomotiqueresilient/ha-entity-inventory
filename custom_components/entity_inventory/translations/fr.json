@@ -76,7 +76,29 @@
   "services": {
     "export": {
       "name": "Exporter l'inventaire",
-      "description": "Génère le fichier YAML d'inventaire (structure uniquement, sans états), selon les filtres configurés."
+      "description": "Génère le fichier d'inventaire YAML (structure seule, aucun état) avec les filtres configurés. Avec une cible (pièces, étages, étiquettes, domaines), produit un inventaire plus petit et partiel dans un fichier séparé.",
+      "fields": {
+        "areas": {
+          "name": "Pièces",
+          "description": "N'exporter que ces pièces (inventaire ciblé, partiel)."
+        },
+        "floors": {
+          "name": "Étages",
+          "description": "N'exporter que les pièces de ces étages."
+        },
+        "labels": {
+          "name": "Étiquettes",
+          "description": "N'exporter que les entités ou appareils portant l'une de ces étiquettes."
+        },
+        "domains": {
+          "name": "Domaines",
+          "description": "N'exporter que ces domaines d'entités (ex. climate)."
+        },
+        "write": {
+          "name": "Écrire le fichier",
+          "description": "Désactivé : rien n'est écrit, l'inventaire est seulement renvoyé dans la réponse de l'action (à copier depuis les outils de développement)."
+        }
+      }
     },
     "validate": {
       "name": "Valider un YAML",

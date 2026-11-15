@@ -1,4 +1,28 @@
 export:
+  fields:
+    areas:
+      selector:
+        area:
+          multiple: true
+    floors:
+      selector:
+        floor:
+          multiple: true
+    labels:
+      selector:
+        label:
+          multiple: true
+    domains:
+      example: climate
+      selector:
+        select:
+          multiple: true
+          custom_value: true
+          options: [climate, light, switch, sensor, binary_sensor, cover, automation, script]
+    write:
+      default: true
+      selector:
+        boolean:
 validate:
   fields:
     yaml:

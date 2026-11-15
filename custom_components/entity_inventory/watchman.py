@@ -60,6 +60,11 @@ def _is_covered(hass: HomeAssistant, path: Path, patterns: list[str]) -> bool:
     return any(fnmatch(absolute, p) or fnmatch(relative, p) for p in patterns)
 
 
+def export_pattern(path: Path) -> str:
+    """Motif couvrant l'export complet ET les exports ciblés (entity_inventory_*.yaml)."""
+    return str(path.with_name(f"{path.stem}*{path.suffix}"))
+
+
 def _inside_config(hass: HomeAssistant, path: Path) -> bool:
     config = os.path.realpath(hass.config.config_dir)
     return os.path.realpath(path).startswith(config + os.sep)
@@ -72,7 +77,10 @@ def async_check(hass: HomeAssistant, entry: ConfigEntry, path: Path) -> None:
     needed = False
     if watchman is not None and _inside_config(hass, path):
         current = _read_ignored(watchman)
-        needed = current is None or not _is_covered(hass, path, current[1])
+        sample = path.with_name(f"{path.stem}_cible{path.suffix}")  # un export ciblé
+        needed = current is None or not (
+            _is_covered(hass, path, current[1]) and _is_covered(hass, sample, current[1])
+        )
 
     if needed:
         ir.async_create_issue(
@@ -83,10 +91,10 @@ def async_check(hass: HomeAssistant, entry: ConfigEntry, path: Path) -> None:
             is_persistent=False,
             severity=ir.IssueSeverity.WARNING,
             translation_key="watchman_scans_export",
-            translation_placeholders={"path": str(path)},
+            translation_placeholders={"path": export_pattern(path)},
             data={"entry_id": entry.entry_id, "path": str(path)},
         )
-        async_raise(hass, entry, "watchman", str(path))
+        async_raise(hass, entry, "watchman", export_pattern(path))
     else:
         ir.async_delete_issue(hass, DOMAIN, issue_id(entry))
         async_clear(hass, entry, "watchman")
@@ -104,7 +112,7 @@ def async_add_exception(hass: HomeAssistant, entry: ConfigEntry, path: Path) -> 
         return False
     location, patterns, as_text = current
 
-    new_pattern = str(path)
+    new_pattern = export_pattern(path)
     old_pattern = entry.data.get(DATA_WATCHMAN_PATTERN)
     patterns = [p for p in patterns if p != old_pattern]
     if new_pattern not in patterns:

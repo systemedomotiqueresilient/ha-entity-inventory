@@ -24,7 +24,7 @@ from homeassistant.helpers import (
 )
 from homeassistant.helpers.hassio import is_hassio
 from homeassistant.loader import async_get_integration
-from homeassistant.util import dt as dt_util
+from homeassistant.util import dt as dt_util, slugify
 from homeassistant.util.file import write_utf8_file_atomic
 
 from .const import (
@@ -77,6 +77,10 @@ HEADER = """\
 #    "missing" = entités qu'ils citent et qui N'EXISTENT PLUS (package cassé : à signaler
 #    et à corriger), "disabled" = entités citées mais désactivées. Le contenu des fichiers
 #    n'est pas exporté : pour corriger un package, demande-le à l'occupant.
+#  - meta.scope présent = inventaire PARTIEL (export ciblé sur des pièces, étages, étiquettes
+#    ou domaines). Une entité absente d'ici peut exister ailleurs, et les automatisations ou
+#    packages hors de la cible ne sont pas listés : pour une catégorie entière ("toutes les
+#    piles") ou un risque de conflit, demande l'export complet.
 #  - meta.ha_state: starting = export fait pendant le démarrage : des entités YAML et
 #    quelques valeurs peuvent manquer. Le signaler, et suggérer de refaire l'export.
 #  - "[email]" dans un nom = adresse e-mail masquée (l'entity_id, lui, reste exact).
@@ -250,6 +254,7 @@ def async_build_inventory(
     options: Mapping[str, Any] | None = None,
     version: str | None = None,
     raw_packages: list[RawPackage] | None | bool = False,
+    scope: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Construit l'inventaire (à appeler dans la boucle d'événements).
 
@@ -276,6 +281,25 @@ def async_build_inventory(
     label_reg = lr.async_get(hass)
     dev_reg = dr.async_get(hass)
     ent_reg = er.async_get(hass)
+
+    # --- Export ciblé : pièces / étages / étiquettes / domaines ----------- #
+    scope = {k: sorted(set(v)) for k, v in (scope or {}).items() if v}
+    scope_areas: set[str] | None = None
+    if scope.get("areas") or scope.get("floors"):
+        scope_areas = set(scope.get("areas", ()))
+        scope_areas |= {
+            a.id for a in area_reg.async_list_areas() if a.floor_id in set(scope.get("floors", ()))
+        }
+    scope_labels = set(scope.get("labels", ()))
+    scope_domains = set(scope.get("domains", ()))
+
+    def _in_scope(entry: er.RegistryEntry, device: dr.DeviceEntry | None) -> bool:
+        if scope_areas is not None:
+            if (entry.area_id or (device.area_id if device else None)) not in scope_areas:
+                return False
+        if scope_labels and not scope_labels & (set(entry.labels) | set(device.labels if device else ())):
+            return False
+        return not scope_domains or entry.domain in scope_domains
 
     # --- Étages et étiquettes -------------------------------------------- #
     floors_by_id = {f.floor_id: f for f in floor_reg.async_list_floors()}
@@ -330,6 +354,8 @@ def async_build_inventory(
     # --- Entités du registre ---------------------------------------------- #
     disabled_count = 0
     excluded = {"config": 0, "diagnostic": 0, "integrations": 0}
+    if scope:
+        excluded["scope"] = 0
     entities_by_device: dict[str, list[dict[str, Any]]] = {}
     entity_count = 0
 
@@ -342,6 +368,9 @@ def async_build_inventory(
             continue
 
         device = dev_reg.async_get(entry.device_id) if entry.device_id else None
+        if scope and not _in_scope(entry, device):
+            excluded["scope"] += 1
+            continue
         device_integration = _device_integration(device) if device else None
         if excluded_integrations & {entry.platform, device_integration}:
             excluded["integrations"] += 1
@@ -415,6 +444,8 @@ def async_build_inventory(
     for state in sorted(hass.states.async_all(), key=lambda s: s.entity_id):
         if ent_reg.async_get(state.entity_id) is not None:
             continue
+        if scope and (scope_areas is not None or scope_labels or state.domain not in scope_domains):
+            continue  # sans registre : ni pièce ni étiquette connues
         item = {"id": state.entity_id}
         _set(item, "name", _txt(state.attributes.get("friendly_name")))
         _set(item, "device_class", state.attributes.get("device_class"))
@@ -434,6 +465,7 @@ def async_build_inventory(
         "ha_version": HA_VERSION,
         "exported_at": dt_util.now().isoformat(timespec="seconds"),
         "ha_state": "running" if hass.state is CoreState.running else "starting",
+        **({"scope": dict(scope)} if scope else {}),
         "language": hass.config.language,
         "temperature_unit": hass.config.units.temperature_unit,
         "filters": {
@@ -471,9 +503,26 @@ def async_build_inventory(
     if raw_packages is None:
         meta["packages_error"] = "configuration.yaml illisible : section packages omise"
     elif raw_packages:
-        packages = async_resolve_packages(hass, raw_packages, _txt)
+        exported: set[str] | None = None
+        if scope:
+            exported = set()
+            stack: list[Any] = [*areas.values(), unassigned, no_registry]
+            while stack:
+                current = stack.pop()
+                if isinstance(current, dict):
+                    if isinstance(current.get("id"), str):
+                        exported.add(current["id"])
+                    stack.extend(current.values())
+                elif isinstance(current, list):
+                    stack.extend(current)
+        packages = async_resolve_packages(hass, raw_packages, _txt, exported)
         meta["counts"]["packages"] = len(packages)
         meta["counts"]["packages_with_missing"] = sum(1 for p in packages.values() if "missing" in p)
+
+    if scope:  # ne garder que les pièces et étages concernés
+        areas = {k: v for k, v in areas.items() if v.get("devices") or v.get("entities")}
+        kept_floors = {v.get("floor") for v in areas.values()}
+        floors = {k: v for k, v in floors.items() if k in kept_floors}
 
     data: dict[str, Any] = {"meta": _clean(meta)}
     _set(data, "floors", floors)
@@ -518,10 +567,21 @@ def dump_inventory(data: dict[str, Any]) -> str:
 # --------------------------------------------------------------------------- #
 # Export
 # --------------------------------------------------------------------------- #
+def scoped_path(path: Path, scope: Mapping[str, Any]) -> Path:
+    """entity_inventory.yaml + {areas: [salle_de_bain]} → entity_inventory_salle_de_bain.yaml"""
+    parts = [str(v) for key in ("floors", "areas", "labels", "domains") for v in scope.get(key) or ()]
+    suffix = slugify("_".join(parts))[:60].strip("_") or "cible"
+    return path.with_name(f"{path.stem}_{suffix}{path.suffix}")
+
+
 async def async_export(
-    hass: HomeAssistant, path: Path, options: Mapping[str, Any] | None = None
+    hass: HomeAssistant,
+    path: Path,
+    options: Mapping[str, Any] | None = None,
+    scope: Mapping[str, Any] | None = None,
+    write: bool = True,
 ) -> dict[str, Any]:
-    """Construit l'inventaire et l'écrit de façon atomique."""
+    """Construit l'inventaire et l'écrit de façon atomique (ou le renvoie, si write=False)."""
     if is_forbidden_path(hass, str(path)):
         raise HomeAssistantError(
             f"Export refusé vers {path} : /config/www est public (servi sans authentification)"
@@ -531,7 +591,15 @@ async def async_export(
     raw_packages: list[RawPackage] | None | bool = False
     if (options or {}).get(CONF_INCLUDE_PACKAGES, DEFAULT_INCLUDE_PACKAGES):
         raw_packages = await hass.async_add_executor_job(scan_packages, hass.config.config_dir)
-    data = async_build_inventory(hass, options, str(integration.version), raw_packages)
+    data = async_build_inventory(hass, options, str(integration.version), raw_packages, scope)
+
+    if not write:
+        content = dump_inventory(data)
+        return {
+            "yaml": content,
+            "size_bytes": len(content.encode("utf-8")),
+            **data["meta"]["counts"],
+        }
 
     def _write() -> int:
         content = dump_inventory(data)

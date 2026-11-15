@@ -145,9 +145,16 @@ def scan_packages(config_dir: str) -> list[RawPackage] | None:
 
 @callback
 def async_resolve_packages(
-    hass: HomeAssistant, raw_packages: list[RawPackage], txt: Any
+    hass: HomeAssistant,
+    raw_packages: list[RawPackage],
+    txt: Any,
+    only_touching: set[str] | None = None,
 ) -> dict[str, dict[str, Any]]:
-    """Compare chaque package aux registres : entités créées, citées disparues, désactivées."""
+    """Compare chaque package aux registres : entités créées, citées disparues, désactivées.
+
+    only_touching : export ciblé, ne garder que les packages qui créent ou citent l'une de
+    ces entités.
+    """
     ent_reg = er.async_get(hass)
     yaml_uids: dict[str, str] = {}
     automation_uids: dict[str, str] = {}
@@ -183,6 +190,8 @@ def async_resolve_packages(
             elif not exists(entity_id):
                 missing.add(entity_id)
 
+        if only_touching is not None and not (defines | raw.cited | raw.keyed) & only_touching:
+            continue
         item: dict[str, Any] = {"file": raw.file}
         if raw.description:
             item["description"] = txt(raw.description)

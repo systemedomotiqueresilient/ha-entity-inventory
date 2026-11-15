@@ -50,7 +50,7 @@ async def _fix(hass: HomeAssistant, entry: MockConfigEntry) -> dict:
 async def test_issue_fix_and_path_change(hass: HomeAssistant) -> None:
     watchman = _watchman(hass, data={"ignored_files": ["*/secrets.yaml"]})
     entry = await _setup(hass, "entity_inventory.yaml")
-    export = str(Path(hass.config.path("entity_inventory.yaml")))
+    export = str(Path(hass.config.path("entity_inventory*.yaml")))  # couvre aussi les exports ciblés
 
     issue = _issue(hass, entry)
     assert issue is not None and issue.is_fixable
@@ -66,14 +66,25 @@ async def test_issue_fix_and_path_change(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
     assert _issue(hass, entry) is not None
     await _fix(hass, entry)
-    new_export = str(Path(hass.config.path("ia/export.yaml")))
+    new_export = str(Path(hass.config.path("ia/export*.yaml")))
     assert watchman.data["ignored_files"] == ["*/secrets.yaml", new_export]
 
 
 async def test_no_issue_outside_config_or_already_ignored(hass: HomeAssistant, tmp_path) -> None:
-    _watchman(hass, data={"ignored_files": ["*/entity_inventory.yaml"]})
+    _watchman(hass, data={"ignored_files": ["*/entity_inventory*.yaml"]})
     covered = await _setup(hass, "entity_inventory.yaml")
     assert _issue(hass, covered) is None
+
+
+async def test_exact_path_upgraded_to_pattern(hass: HomeAssistant) -> None:
+    """Exception posée avant la 0.7.0 (chemin exact) : les exports ciblés ne seraient pas couverts."""
+    exact = str(Path(hass.config.path("entity_inventory.yaml")))
+    watchman = _watchman(hass, data={"ignored_files": [exact]})
+    entry = await _setup(hass, "entity_inventory.yaml")
+    hass.config_entries.async_update_entry(entry, data={**entry.data, "watchman_pattern": exact})
+    assert _issue(hass, entry) is not None
+    await _fix(hass, entry)
+    assert watchman.data["ignored_files"] == [str(Path(hass.config.path("entity_inventory*.yaml")))]
 
 
 async def test_no_issue_on_share(hass: HomeAssistant, tmp_path: Path) -> None:
@@ -92,7 +103,7 @@ async def test_legacy_text_format(hass: HomeAssistant) -> None:
     watchman = _watchman(hass, options={"ignored_files": "*/secrets.yaml, */ui-lovelace.yaml"})
     entry = await _setup(hass, "entity_inventory.yaml")
     await _fix(hass, entry)
-    export = str(Path(hass.config.path("entity_inventory.yaml")))
+    export = str(Path(hass.config.path("entity_inventory*.yaml")))
     assert watchman.options["ignored_files"] == f"*/secrets.yaml, */ui-lovelace.yaml, {export}"
 
 

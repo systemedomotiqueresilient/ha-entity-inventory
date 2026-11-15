@@ -76,7 +76,29 @@
   "services": {
     "export": {
       "name": "Export inventory",
-      "description": "Generates the YAML inventory file (structure only, no states) using the configured filters."
+      "description": "Generates the YAML inventory file (structure only, no states) using the configured filters. With a target (areas, floors, labels, domains), produces a smaller, partial inventory in a separate file.",
+      "fields": {
+        "areas": {
+          "name": "Areas",
+          "description": "Export only these areas (targeted, partial inventory)."
+        },
+        "floors": {
+          "name": "Floors",
+          "description": "Export only the areas of these floors."
+        },
+        "labels": {
+          "name": "Labels",
+          "description": "Export only entities or devices carrying one of these labels."
+        },
+        "domains": {
+          "name": "Domains",
+          "description": "Export only these entity domains (e.g. climate)."
+        },
+        "write": {
+          "name": "Write the file",
+          "description": "Off: nothing is written, the inventory is only returned in the action response (to copy from developer tools)."
+        }
+      }
     },
     "validate": {
       "name": "Validate YAML",

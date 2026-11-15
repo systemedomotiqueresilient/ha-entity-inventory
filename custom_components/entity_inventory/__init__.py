@@ -14,8 +14,14 @@ from homeassistant.core import (
     SupportsResponse,
     callback,
 )
-from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import config_validation as cv, issue_registry as ir
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers import (
+    area_registry as ar,
+    config_validation as cv,
+    floor_registry as fr,
+    issue_registry as ir,
+    label_registry as lr,
+)
 from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
 
@@ -43,14 +49,36 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         ]
         if not entries:
             raise HomeAssistantError("Entity Inventory n'est pas configuré")
-        result = await async_run_export(hass, entries[0])
+        scope = {
+            key: call.data[key]
+            for key in ("areas", "floors", "labels", "domains")
+            if call.data.get(key)
+        }
+        _check_scope(hass, scope)
+        write = call.data.get("write", True)
+        if not write and not call.return_response:
+            raise ServiceValidationError(
+                "write: false ne renvoie l'inventaire que dans la réponse de l'action : "
+                "activez la réponse (outils de développement) ou retirez write: false"
+            )
+        result = await async_run_export(hass, entries[0], scope or None, write)
+        if scope:
+            result = {**result, "scope": scope}
         return result if call.return_response else None
 
     hass.services.async_register(
         DOMAIN,
         SERVICE_EXPORT,
         _handle_export,
-        schema=vol.Schema({}),
+        schema=vol.Schema(
+            {
+                vol.Optional("areas"): vol.All(cv.ensure_list, [cv.string]),
+                vol.Optional("floors"): vol.All(cv.ensure_list, [cv.string]),
+                vol.Optional("labels"): vol.All(cv.ensure_list, [cv.string]),
+                vol.Optional("domains"): vol.All(cv.ensure_list, [cv.string]),
+                vol.Optional("write", default=True): cv.boolean,
+            }
+        ),
         supports_response=SupportsResponse.OPTIONAL,
     )
 
@@ -80,6 +108,22 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         supports_response=SupportsResponse.ONLY,
     )
     return True
+
+
+def _check_scope(hass: HomeAssistant, scope: dict[str, list[str]]) -> None:
+    """Une cible inconnue donnerait un export vide sans explication : on refuse clairement."""
+    known = {
+        "areas": {a.id for a in ar.async_get(hass).async_list_areas()},
+        "floors": {f.floor_id for f in fr.async_get(hass).async_list_floors()},
+        "labels": {l.label_id for l in lr.async_get(hass).async_list_labels()},
+    }
+    for key, valid in known.items():
+        unknown = sorted(set(scope.get(key, ())) - valid)
+        if unknown:
+            raise ServiceValidationError(
+                f"{key} inconnu(s) : {', '.join(unknown)}. Valeurs possibles : "
+                f"{', '.join(sorted(valid)) or 'aucune'}"
+            )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
