@@ -1,68 +1,70 @@
 # Entity Inventory
 
+🇬🇧 **English** · 🇫🇷 [Français](README.fr.md)
+
 [![Validate](https://github.com/systemedomotiqueresilient/ha-entity-inventory/actions/workflows/validate.yml/badge.svg)](https://github.com/systemedomotiqueresilient/ha-entity-inventory/actions/workflows/validate.yml)
 [![Release](https://img.shields.io/github/v/release/systemedomotiqueresilient/ha-entity-inventory)](https://github.com/systemedomotiqueresilient/ha-entity-inventory/releases)
 
-**Donnez à une IA le plan de votre maison, pas les clés.**
+**Give an AI the floor plan of your home, not the keys.**
 
-Entity Inventory exporte la *structure* de votre Home Assistant — étages, pièces, appareils, entités et les valeurs qu'elles acceptent — dans un fichier YAML compact. Vous le joignez à une conversation avec l'IA de votre choix pour qu'elle rédige automatisations, scripts ou packages avec les **bons `entity_id`** et les **bons modes**, sans qu'elle ait le moindre accès à votre instance.
+Entity Inventory exports the *structure* of your Home Assistant — floors, areas, devices, entities and the values they accept — to a compact YAML file. You attach it to a conversation with the AI of your choice so it can write automations, scripts or packages with the **right `entity_id`s** and the **right modes**, without any access to your instance.
 
-- 🔒 **Aucun accès distant** : pas de MCP, pas de jeton, pas d'API ouverte. L'IA ne voit qu'un fichier que vous relisez.
-- 🧹 **Aucune donnée de vie privée** : ni états, ni historique, ni coordonnées GPS, ni IP. Les attributs passent par une liste blanche.
-- 🧠 **Pensé pour les LLM** : hiérarchie pièce → appareil → entité, listes compactes, en-tête qui explique à l'IA comment lire le fichier.
+- 🔒 **No remote access**: no MCP, no token, no open API. The AI only sees a file you can read first.
+- 🧹 **No private-life data**: no states, no history, no GPS coordinates, no IP addresses. Attributes go through an allow-list.
+- 🧠 **Built for LLMs**: area → device → entity hierarchy, compact lists, and a header that tells the AI how to read the file.
 
 ## Installation
 
 ### Marketplace (Home Assistant 2026.11+)
 
-*Paramètres → Marketplace* → rechercher **Entity Inventory** → Installer.
+*Settings → Marketplace* → search for **Entity Inventory** → Install.
 
-Tant que l'intégration n'est pas dans le catalogue par défaut : *Marketplace → ⋮ → Dépôts personnalisés* → `https://github.com/systemedomotiqueresilient/ha-entity-inventory`, type **Intégration**.
+Until the integration is in the default catalog: *Marketplace → ⋮ → Custom repositories* → `https://github.com/systemedomotiqueresilient/ha-entity-inventory`, type **Integration**.
 
-### HACS (avant 2026.11)
+### HACS (before 2026.11)
 
-[![Ouvrir dans HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=systemedomotiqueresilient&repository=ha-entity-inventory&category=integration)
+[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=systemedomotiqueresilient&repository=ha-entity-inventory&category=integration)
 
-Ou *HACS → ⋮ → Dépôts personnalisés* → l'URL du dépôt, type **Intégration**.
+Or *HACS → ⋮ → Custom repositories* → the repository URL, type **Integration**.
 
-### Manuelle
+### Manual
 
-Copier `custom_components/entity_inventory/` dans `/config/custom_components/` et redémarrer.
+Copy `custom_components/entity_inventory/` into `/config/custom_components/` and restart.
 
 ## Configuration
 
-*Paramètres → Appareils et services → Ajouter une intégration → Entity Inventory*, puis choisir le fichier de sortie :
+*Settings → Devices & services → Add integration → Entity Inventory*, then choose the output file:
 
-- défaut : `/share/entity_inventory.yaml` sur HAOS / Supervised (accessible par Samba, hors de portée de Watchman), `/config/entity_inventory.yaml` sinon ;
-- chemin relatif = relatif à `/config`, chemin absolu accepté (ex. `/share/entity_inventory.yaml`) ;
-- **`/config/www` est refusé** : ce dossier est servi sans authentification sur `/local/`.
-- le dossier est vérifié dès la saisie : hors de `/config`, il doit déjà exister (sur une installation Docker ou Core, `/share` n'existe pas et n'est jamais créé). Sous `/config`, un sous-dossier manquant est créé au premier export.
+- default: `/share/entity_inventory.yaml` on HAOS / Supervised (reachable over Samba, out of Watchman's reach), `/config/entity_inventory.yaml` otherwise;
+- a relative path is relative to `/config`; absolute paths are accepted (e.g. `/share/entity_inventory.yaml`);
+- **`/config/www` is refused**: that folder is served without authentication under `/local/`;
+- the folder is checked as soon as you enter it: outside `/config` it must already exist (on a Docker or Core install, `/share` does not exist and is never created). Under `/config`, a missing sub-folder is created on the first export.
 
-| Option | Défaut | Effet |
+| Option | Default | Effect |
 |---|---|---|
-| Inclure les entités de configuration | non | calibrations, mode LED, boutons « vérifier la mise à jour »… |
-| Inclure les entités de diagnostic | non | signal, LQI, tension, dernière vue… — **les batteries sont toujours gardées** |
-| Intégrations à exclure | aucune | ex. `proxmoxve`, `sentinel`, `sentinel_report` : aucune de leurs entités n'est exportée |
-| Masquer les adresses e-mail | oui | toute adresse présente dans un nom devient `[email]` |
-| Analyser les packages | oui | liste les fichiers de packages, ce qu'ils créent et ce qu'ils citent qui n'existe plus |
-| Téléphone à prévenir | aucun | entité `notify.*` (app Compagnon) prévenue quand une action est requise |
+| Include configuration entities | no | calibrations, LED mode, "check for update" buttons… |
+| Include diagnostic entities | no | signal, LQI, voltage, last seen… — **batteries are always kept** |
+| Integrations to exclude | none | e.g. `proxmoxve`, `sentinel`, `sentinel_report`: none of their entities are exported |
+| Hide e-mail addresses | yes | any address found in a name becomes `[email]` |
+| Analyse packages | yes | lists package files, what they create and what they cite that no longer exists |
+| Phone to notify | none | `notify.*` entity (Companion app) alerted when action is required |
 
-Le fichier indique dans `meta.filters` et `meta.counts.excluded` ce qui a été filtré : l'IA sait qu'une entité absente peut exister. Les entités désactivées ne sont jamais listées (seulement comptées).
+The file states in `meta.filters` and `meta.counts.excluded` what was filtered out, so the AI knows a missing entity may still exist. Disabled entities are never listed (only counted).
 
-Ordre de grandeur sur une installation réelle de 2 400 entités : **470 Ko → 170 Ko** (≈ 146k → 55k tokens) avec les filtres par défaut, **≈ 137 Ko** (≈ 42k tokens) en excluant en plus les intégrations de surveillance.
+Order of magnitude on a real 2,400-entity installation: **470 KB → 170 KB** (≈ 146k → 55k tokens) with the default filters, **≈ 135 KB** (≈ 42k tokens) when monitoring integrations are also excluded. A targeted export of one area fits in a few KB.
 
-Tout se modifie ensuite via *Configurer*.
+Everything can be changed later through *Configure*.
 
-## Utilisation
+## Usage
 
-- le bouton **Exporter l'inventaire** (son état indique la date du dernier export) ;
-- ou l'action `entity_inventory.export`, qui renvoie le chemin et les compteurs.
+- the **Export inventory** button (its state shows the date of the last export);
+- or the `entity_inventory.export` action, which returns the path and the counters.
 
-Export automatique chaque nuit :
+Automatic export every night:
 
 ```yaml
 automation:
-  - alias: Inventaire nocturne
+  - alias: Nightly inventory
     triggers:
       - trigger: time
         at: "03:00:00"
@@ -70,59 +72,59 @@ automation:
       - action: entity_inventory.export
 ```
 
-Si un export échoue (dossier disparu, disque en lecture seule…), une **notification persistante** l'indique, et le téléphone choisi dans les options est prévenu : sans cela, un export nocturne raté passerait inaperçu et l'IA travaillerait sur un inventaire périmé. Le dossier est aussi contrôlé à chaque démarrage. Une seule alerte par situation ; elle disparaît au premier export réussi.
+If an export fails (folder gone, read-only disk…), a **persistent notification** says so and the phone chosen in the options is notified: otherwise a failed nightly export would go unnoticed and the AI would work on an outdated inventory. The folder is also checked at every startup. One alert per situation; it disappears with the next successful export.
 
-### Export ciblé
+### Targeted export
 
-Pour ne confier à l'IA que ce dont elle a besoin, l'action accepte une cible :
+To give the AI only what it needs, the action accepts a target:
 
 ```yaml
 action: entity_inventory.export
 data:
-  areas: [salle_de_bain]      # pièces (area_id)
-  floors: [etage]             # étages : toutes leurs pièces
-  labels: [chauffage]         # étiquettes portées par l'entité ou son appareil
-  domains: [climate]          # domaines d'entités
+  areas: [bathroom]           # areas (area_id)
+  floors: [upstairs]          # floors: all their areas
+  labels: [heating]           # labels carried by the entity or its device
+  domains: [climate]          # entity domains
 ```
 
-- Dans un même critère, une valeur suffit (`areas: [wc, couloir]` = l'une ou l'autre) ; entre critères, tous doivent être remplis (`areas` + `domains` = les thermostats de ces pièces).
-- Le résultat va dans un **fichier séparé** nommé d'après la cible (`entity_inventory_salle_de_bain.yaml`) : l'export complet n'est pas modifié.
-- L'en-tête complet est conservé, et `meta.scope` indique à l'IA que l'inventaire est **partiel** : elle sait qu'une entité absente peut exister ailleurs, et qu'il faut l'export complet pour une catégorie entière ou pour repérer un conflit.
-- Seuls les packages qui créent ou citent une entité de la cible sont listés.
-- Une pièce, un étage ou une étiquette inconnus sont refusés avec la liste des valeurs possibles, plutôt que de produire un fichier vide.
-- `write: false` n'écrit rien : l'inventaire est seulement renvoyé dans la réponse de l'action, à copier depuis les outils de développement.
+- Within one criterion, any value matches (`areas: [toilet, hallway]` = either one); across criteria, all must match (`areas` + `domains` = the thermostats of those areas).
+- The result goes to a **separate file** named after the target (`entity_inventory_bathroom.yaml`): the full export is left untouched.
+- The full header is kept, and `meta.scope` tells the AI the inventory is **partial**: it knows a missing entity may exist elsewhere, and that a whole category or a conflict check needs the full export.
+- Only packages that create or cite an entity of the target are listed.
+- An unknown area, floor or label is refused with the list of valid values, instead of producing an empty file.
+- `write: false` writes nothing: the inventory is only returned in the action response, to copy from the developer tools.
 
-Le débutant donne l'export complet ; l'utilisateur plus avancé choisit ce qu'il transmet.
+Beginners give the full export; more advanced users choose what they share.
 
-Puis, dans la conversation avec l'IA : *« Voici l'inventaire de ma maison. Écris un package qui passe tous les radiateurs de l'étage en eco quand l'alarme est armée. »*
+Then, in the conversation with the AI: *"Here is my home inventory. Write a package that sets every radiator upstairs to eco when the alarm is armed."*
 
-## Cohabitation avec Watchman
+## Living with Watchman
 
-[Watchman](https://github.com/dummylabs/thewatchman) parcourt les fichiers `.yaml` de `/config` et signale toute entité citée qui est introuvable, indisponible ou inconnue. Un export placé dans `/config` y ajouterait des centaines de faux positifs (boutons, scènes, synthèse vocale… sont normalement `unknown`).
+[Watchman](https://github.com/dummylabs/thewatchman) scans the `.yaml` files in `/config` and reports every cited entity that is missing, unavailable or unknown. An export stored in `/config` would add hundreds of false positives (buttons, scenes, text-to-speech… are normally `unknown`).
 
-- Par défaut sur HAOS, l'export va dans `/share` : Watchman ne le voit pas.
-- Si vous choisissez un chemin dans `/config` et que Watchman est installé, une **réparation** apparaît (*Paramètres → Système → Réparations*). Après confirmation, Entity Inventory ajoute aux fichiers ignorés de Watchman un motif qui couvre l'export complet et les exports ciblés (`entity_inventory*.yaml`). Une exception posée avant la 0.7.0 avec le chemin exact est remplacée par ce motif via la même réparation. Si vous changez le chemin plus tard, la réparation revient et remplace l'ancien chemin.
-- Pour ne pas la manquer parmi d'autres réparations, une **notification persistante** (avec un lien vers les réparations) est créée, et, si vous avez choisi un **téléphone à prévenir** dans les options (entité `notify.*` de l'app Compagnon), il reçoit une notification. Une seule fois par situation : pas de relance à chaque export ou redémarrage.
-- Rien n'est jamais modifié dans Watchman sans cette confirmation. Si son format de configuration n'est pas reconnu, rien n'est touché et la réparation l'indique.
-- Les brouillons à valider peuvent aussi aller dans `/share/ia/` (`path: /share/ia/brouillon.yaml`) pour la même raison.
+- On HAOS the export goes to `/share` by default: Watchman does not see it.
+- If you choose a path inside `/config` and Watchman is installed, a **repair** appears (*Settings → System → Repairs*). Once confirmed, Entity Inventory adds a pattern to Watchman's ignored files that covers the full export and targeted exports (`entity_inventory*.yaml`). An exception set before 0.7.0 with the exact path is replaced by this pattern through the same repair. If you change the path later, the repair comes back and replaces the old one.
+- So you don't miss it among other repairs, a **persistent notification** (with a link to repairs) is created and, if you chose a **phone to notify** in the options (Companion app `notify.*` entity), it receives a notification. Only once per situation: no reminder at every export or restart.
+- Nothing is ever changed in Watchman without this confirmation. If its configuration format is not recognised, nothing is touched and the repair says so.
+- Drafts to validate can also go to `/share/ai/` (`path: /share/ai/draft.yaml`) for the same reason.
 
-## Vérifier ce que l'IA a écrit
+## Checking what the AI wrote
 
-L'action `entity_inventory.validate` contrôle un YAML produit par une IA contre votre instance réelle. Deux façons de lui donner le YAML :
+The `entity_inventory.validate` action checks AI-written YAML against your real instance. Two ways to give it the YAML:
 
-**1. Par fichier (recommandé).** Enregistrez la réponse de l'IA, par exemple dans `/config/ia/brouillon.yaml` (éditeur de fichiers, Samba…), puis dans *Outils de développement → Actions* :
+**1. As a file (recommended).** Save the AI's answer, for example to `/config/ai/draft.yaml` (file editor, Samba…), then in *Developer tools → Actions*:
 
 ```yaml
 action: entity_inventory.validate
 data:
-  path: ia/brouillon.yaml
+  path: ai/draft.yaml
 ```
 
-Le chemin est relatif à `/config` (ou absolu dans `/share`). Seuls les fichiers `.yaml`/`.yml` sont acceptés, jamais `secrets.yaml`.
+The path is relative to `/config` (or absolute under `/share`). Only `.yaml`/`.yml` files are accepted, never `secrets.yaml`.
 
-Le fichier contient **uniquement** le YAML de l'IA (`alias:`, `triggers:`, `actions:`…), pas l'appel `action: entity_inventory.validate` ni de bloc `raw`. La réponse indique `entities_checked` et `actions_checked` : un YAML où rien n'a pu être vérifié est déclaré invalide plutôt que faussement correct.
+The file contains **only** the AI's YAML (`alias:`, `triggers:`, `actions:`…), not the `action: entity_inventory.validate` call nor a `raw` block. The response reports `entities_checked` and `actions_checked`: YAML in which nothing could be checked is declared invalid rather than wrongly correct.
 
-**2. Par copier-coller.** Les outils de développement évaluent les templates `{{ … }}` *avant* d'appeler l'action : un YAML qui contient `{{ trigger.to_state.name }}` échoue avec `'trigger' is undefined`. Entourez-le d'un bloc `raw` :
+**2. By copy-paste.** The developer tools render `{{ … }}` templates *before* calling the action: YAML containing `{{ trigger.to_state.name }}` fails with `'trigger' is undefined`. Wrap it in a `raw` block:
 
 ```yaml
 action: entity_inventory.validate
@@ -131,104 +133,104 @@ data:
     {% raw %}
     triggers:
       - trigger: numeric_state
-        entity_id: sensor.0x30fb10fffe74e11b_battery
+        entity_id: sensor.living_room_battery
         below: 15
     actions:
       - action: notify.send_message
         target:
-          entity_id: notify.iphone
+          entity_id: notify.my_phone
         data:
-          message: "{{ trigger.to_state.name }} : {{ trigger.to_state.state }} %"
+          message: "{{ trigger.to_state.name }}: {{ trigger.to_state.state }} %"
     {% endraw %}
 ```
 
-La réponse liste, sans rien modifier :
+Without changing anything, the response lists:
 
-- **erreurs** : entité ou action inexistante, entité appelée comme une action (ex. `action: notify.mon_telephone` au lieu de `notify.send_message`) (y compris dans les templates `states('…')`), `preset_mode` / `option` / `hvac_mode` hors des valeurs permises (avec la liste correcte), `off` non quoté interprété comme booléen, `numeric_state` sur une entité non numérique (`group.*`, `binary_sensor`…) ;
-- **avertissements** : entité désactivée, action appliquée à une entité d'un autre domaine, syntaxe ancienne (`platform:`, `service:`, `trigger:` au lieu de `triggers:`…), **mise à jour automatisée** (`update.install`, `hassio.addon_update`, OTA Zigbee2MQTT), avec un avertissement renforcé pour `update.install` sur `all` ou sans cible, et sans `backup: true`.
+- **errors**: unknown entity or action, an entity called as an action (e.g. `action: notify.my_phone` instead of `notify.send_message`) (including inside `states('…')` templates), `preset_mode` / `option` / `hvac_mode` outside the allowed values (with the correct list), unquoted `off` read as a boolean, `numeric_state` on a non-numeric entity (`group.*`, `binary_sensor`…);
+- **warnings**: disabled entity, action applied to an entity of another domain, legacy syntax (`platform:`, `service:`, `trigger:` instead of `triggers:`…), **automated updates** (`update.install`, `hassio.addon_update`, Zigbee2MQTT OTA), with a stronger warning for `update.install` on `all` or without a target, and without `backup: true`.
 
-> **Mises à jour : toujours une décision humaine.** Beaucoup de tutoriels proposent d'installer les mises à jour automatiquement, la nuit. Une mise à jour peut casser une intégration, exiger une migration ou un redémarrage : elle doit être lancée à la main, quand on peut réagir. L'en-tête de l'inventaire demande à l'IA de ne fournir aucun YAML d'installation dans sa première réponse, de proposer une notification « mise à jour disponible » et d'attendre une confirmation explicite ; la validation le signale par un avertissement. Rien n'est interdit : la décision reste à l'occupant.
+> **Updates: always a human decision.** Many tutorials suggest installing updates automatically at night. An update can break an integration, require a migration or a restart: it should be started by hand, when someone can react. The inventory header asks the AI not to provide any installation YAML in its first answer, to suggest an "update available" notification instead and to wait for explicit confirmation; validation flags it with a warning. Nothing is forbidden: the decision stays with the occupant.
 
-Ce que la validation ne peut pas voir : une liste incomplète (« toutes les piles » à qui il en manque) ou une logique discutable. Relisez quand même.
+What validation cannot see: an incomplete list ("all batteries" with some missing) or questionable logic. Read it anyway.
 
-## Contenu du fichier
+## File content
 
 ```yaml
-meta:          # version HA, date, compteurs
-floors:        # floor_id → nom, niveau
-labels:        # label_id → nom
-areas:         # area_id → appareils → entités (+ entités sans appareil)
-  salon:
-    name: Salon
-    floor: rez_de_chaussee
+meta:          # HA version, date, counters
+floors:        # floor_id → name, level
+labels:        # label_id → name
+areas:         # area_id → devices → entities (+ entities without a device)
+  living_room:
+    name: Living room
+    floor: ground_floor
     devices:
-      - name: Radiateur salon
+      - name: Living room radiator
         manufacturer: NodOn
         integration: zha
-        via: Coordinateur Zigbee   # passerelle : c'est là qu'on renomme ou supprime l'appareil
+        via: Zigbee coordinator   # gateway: where the device is renamed or removed
         entities:
-          - id: climate.radiateur_salon
+          - id: climate.living_room_radiator
             hvac_modes: [heat, 'off']
             preset_modes: [comfort, eco, away, none]
-unassigned:    # appareils / entités sans pièce
-no_registry:   # entités YAML sans unique_id
-packages:      # fichiers de packages : ce qu'ils créent, ce qu'ils citent qui a disparu
-  derivee_wc:
-    file: packages/derivee_wc.yaml
-    description: Package : Dérivées WC        # première ligne de commentaire du fichier
-    defines: [sensor.tdeg_wc_sonoff_package]
-    missing: [sensor.0x00124b002a50b200_temperature]   # → package cassé
+unassigned:    # devices / entities without an area
+no_registry:   # YAML entities without unique_id
+packages:      # package files: what they create, what they cite that is gone
+  toilet_derivatives:
+    file: packages/toilet_derivatives.yaml
+    description: "Package: toilet derivatives"   # first comment line of the file
+    defines: [sensor.toilet_temperature_rate]
+    missing: [sensor.0x00124b002a50b200_temperature]   # → broken package
 ```
+
+| Exported | Never exported |
+|---|---|
+| entity_id, name, area, floor, labels, aliases | current states, history |
+| device: name, manufacturer, model, integration, gateway (`via`) | GPS coordinates, IP addresses, dynamic attributes |
+| device_class, unit, state_class, category | internal device identifiers |
+| `options`, `hvac_modes`, `preset_modes`, `event_types`, min/max… | |
+
+The attribute allow-list lives in [`const.py`](custom_components/entity_inventory/const.py).
+
+> ⚠️ **Names** are exported as they are (areas, devices, calendars…). Some monitoring integrations name their sensors after the title of the accounts they watch: e-mail addresses are masked in names, but an `entity_id` may contain a "slugified" form of one (it must stay exact for the AI). Exclude those integrations if needed, and read the file before sharing it.
 
 ## Packages
 
-Une IA ne répare que ce qu'on lui montre. Quand une sonde est remplacée, tous les packages qui la citent cassent en silence, et rien n'indique à l'IA qu'ils existent. La section `packages` les lui désigne : pour chaque fichier déclaré dans `homeassistant: packages:` (quel que soit le dossier, `!include_dir_named`, `!include_dir_merge_named` ou bloc direct), elle donne :
+An AI only fixes what it is shown. When a sensor is replaced, every package that cites it breaks silently, and nothing tells the AI those packages exist. The `packages` section points them out: for each file declared under `homeassistant: packages:` (any folder, `!include_dir_named`, `!include_dir_merge_named` or inline), it gives:
 
-- `defines` : les entités que le fichier crée (inutile de les recréer ailleurs, source des doublons en `_2`) ;
-- `missing` : les entités citées qui **n'existent plus** ;
-- `disabled` : les entités citées mais désactivées ;
-- `description` : la première ligne de commentaire du fichier.
+- `defines`: the entities the file creates (no need to recreate them elsewhere — the usual source of `_2` duplicates);
+- `missing`: cited entities that **no longer exist**;
+- `disabled`: cited entities that are disabled;
+- `description`: the first comment line of the file.
 
-Le **contenu des fichiers n'est jamais exporté**, seulement leur nom et des `entity_id`. Les fichiers sont lus en lecture seule avec le chargeur de Home Assistant ; les valeurs de `!secret` ne sortent jamais. Si `configuration.yaml` est illisible, la section est omise (`meta.packages_error`) sans bloquer l'export.
+**File contents are never exported**, only their names and `entity_id`s. Files are read-only, using Home Assistant's own loader; `!secret` values never leave. If `configuration.yaml` cannot be read, the section is omitted (`meta.packages_error`) without blocking the export.
 
-### Convention de nommage conseillée
+### Suggested naming convention
 
-Deux habitudes rendent cette section bien plus utile, à l'IA comme à vous :
+Two habits make this section much more useful, to the AI and to you:
 
-1. **Un nom de fichier qui dit la pièce et la fonction** : `wc_derivees.yaml`, `appartement_temperature_moyenne.yaml` plutôt que `derivee_wc.yaml` ou `test2.yaml`.
-2. **Une première ligne de commentaire** qui décrit le package, reprise telle quelle :
+1. **A file name that says the area and the purpose**: `toilet_derivatives.yaml`, `home_average_temperature.yaml` rather than `deriv_wc.yaml` or `test2.yaml`.
+2. **A first comment line** describing the package, copied as is:
 
 ```yaml
-# Package : WC — dérivées de température et d'humidité (sonde SNZB-02P)
+# Package: toilet — temperature and humidity derivatives (SNZB-02P sensor)
 sensor:
   - platform: derivative
     ...
 ```
 
-## État de démarrage
+## Startup state
 
-Un export lancé pendant le démarrage de Home Assistant (par exemple par une automatisation déclenchée au démarrage) peut être incomplet : entités YAML sans `unique_id` pas encore créées, quelques valeurs absentes. Il est marqué `meta.ha_state: starting`, et l'en-tête demande à l'IA de le signaler.
+An export started while Home Assistant is still starting (for example by an automation triggered at startup) may be incomplete: YAML entities without `unique_id` not created yet, some values missing. It is marked `meta.ha_state: starting`, and the header asks the AI to point it out.
 
-| Exporté | Jamais exporté |
-|---|---|
-| entity_id, nom, pièce, étage, étiquettes, alias | états courants, historique |
-| appareil : nom, fabricant, modèle, intégration, passerelle (`via`) | coordonnées GPS, IP, attributs dynamiques |
-| device_class, unité, state_class, catégorie | identifiants internes d'appareils |
-| `options`, `hvac_modes`, `preset_modes`, `event_types`, min/max… | |
-
-La liste blanche des attributs est dans [`const.py`](custom_components/entity_inventory/const.py).
-
-> ⚠️ Les **noms** sont exportés tels quels (pièces, appareils, calendriers…). Certaines intégrations de surveillance nomment leurs capteurs d'après le titre des comptes qu'elles surveillent : les adresses e-mail sont masquées dans les noms, mais un `entity_id` peut en contenir une forme « slugifiée » (il doit rester exact pour l'IA). Excluez ces intégrations si besoin, et relisez le fichier avant de le partager.
-
-## Développement
+## Development
 
 ```bash
 pip install -r requirements_test.txt
 pytest
 ```
 
-Publier une version : créer une release GitHub taguée `vX.Y.Z`. Le workflow `release.yml` écrit la version dans `manifest.json` et attache `entity_inventory.zip`.
+Releasing a version: create a GitHub release tagged `vX.Y.Z`. The `release.yml` workflow writes the version into `manifest.json` and attaches `entity_inventory.zip`.
 
-## Licence
+## License
 
 MIT
