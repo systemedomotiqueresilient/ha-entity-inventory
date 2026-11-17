@@ -148,3 +148,22 @@ async def test_ha_state_starting(hass: HomeAssistant) -> None:
         assert async_build_inventory(hass)["meta"]["ha_state"] == "starting"
     finally:
         hass.set_state(CoreState.running)
+
+
+def test_description_skips_code_like_comments(tmp_path: Path) -> None:
+    from custom_components.entity_inventory.packages import _description
+
+    cases = {
+        "# packages/chauffage_mobile.yaml\n# coreelec_odroidhc4:\n# Package : Chauffage mobile\n": "Package : Chauffage mobile",
+        "# ======\n#   platform: derivative\n# ======\nsensor:\n": None,
+        "# Package: Scène Nuit Couloir (Package)\n": "Package: Scène Nuit Couloir (Package)",
+    }
+    for text, expected in cases.items():
+        f = tmp_path / "p.yaml"
+        f.write_text(text, encoding="utf-8")
+        assert _description(str(f)) == expected
+
+
+async def test_header_asks_to_report_broken_packages(hass: HomeAssistant, config_dir: Path, tmp_path: Path) -> None:
+    _, text = await _export(hass, tmp_path)
+    assert "AVANT de répondre, consulte la section \"packages\"" in text

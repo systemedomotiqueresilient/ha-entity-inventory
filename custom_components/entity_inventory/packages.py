@@ -41,6 +41,9 @@ _EXTRA_DOMAINS = frozenset({
 })
 _ENTITY_RE = re.compile(r"(?<![\w.])([a-z_]+)\.([a-z0-9_]+)\b")
 _COMMENT_RE = re.compile(r"^\s*#+\s*(.*?)\s*$")
+# Commentaires qui ressemblent à du code ou à un chemin, pas à une description :
+# « sensor: », « platform: derivative », « - service: x », « packages/chauffage.yaml »
+_CODE_RE = re.compile(r"^(?:-\s|[a-z0-9_]+:(?:\s|$)|\S*(?:/|\.ya?ml)\S*$)")
 
 
 @dataclass
@@ -91,7 +94,7 @@ def _description(path: str) -> str | None:
                         return None  # le contenu commence : pas d'en-tête
                     continue
                 text = match.group(1).strip("=-*_~ ")
-                if any(c.isalpha() for c in text):
+                if any(c.isalpha() for c in text) and not _CODE_RE.match(text):
                     return text[:150]
     except OSError:
         return None

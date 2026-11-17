@@ -100,6 +100,10 @@ HEADER = """\
 #    et "target: entity_id: notify.xxx" (données : message, title).
 #  - numeric_state exige une entité à état numérique (sensor, number, input_number…) :
 #    jamais un group.*, binary_sensor ou switch. Pour un minimum, utiliser un capteur min_max.
+#  - AVANT de répondre, consulte la section "packages" : si des packages ont des entités "missing",
+#    signale-les à l'occupant même s'il ne l'a pas demandé (en priorité ceux qui touchent sa
+#    demande), avec la correspondance probable ancien → nouvel entity_id quand le même appareil
+#    ou la même pièce l'indique, et propose de les corriger en lui demandant leur contenu.
 #  - Mises à jour (update.install, hassio.addon_update, OTA Zigbee…) : ne JAMAIS les automatiser.
 #    Une mise à jour peut casser l'installation et doit rester une décision humaine, prise quand
 #    l'occupant peut réagir. Si on te le demande, ta PREMIÈRE réponse ne contient AUCUN YAML
