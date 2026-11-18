@@ -29,6 +29,9 @@ PACKAGES = {
     "      - action: climate.set_preset_mode\n        target: {entity_id: climate.seche_serviette}\n",
     "wc_derivees.yaml": "# Package : WC dérivées\nsensor:\n  - platform: derivative\n"
     "    source: sensor.wc_temperature\n",
+    # Cas réel : package cassé dont la sonde disparue ne peut plus être rattachée à une pièce
+    "chambre_derivees.yaml": "# Package : Chambre dérivées\nsensor:\n  - platform: derivative\n"
+    "    source: sensor.ancienne_sonde_temperature\n",
 }
 
 
@@ -113,8 +116,13 @@ async def test_area_scope(hass: HomeAssistant, home: Path) -> None:
     assert "no_registry" not in inv  # sans registre : pas de pièce connue
     assert inv["meta"]["scope"] == {"areas": ["salle_de_bain"]}
     assert inv["meta"]["counts"]["excluded"]["scope"] == 2
-    assert list(inv["packages"]) == ["sdb_chauffage"]  # seul package qui touche la cible
-    assert "inventaire PARTIEL" in text
+    # le package qui touche la cible, et TOUJOURS les packages cassés de l'installation
+    assert list(inv["packages"]) == ["chambre_derivees", "sdb_chauffage"]
+    assert inv["packages"]["chambre_derivees"]["missing"] == ["sensor.ancienne_sonde_temperature"]
+    assert inv["meta"]["counts"]["packages_with_missing"] == 1
+    # compteurs du fichier, pas de toute l'instance
+    assert inv["meta"]["counts"]["areas"] == 1 and inv["meta"]["counts"]["floors"] == 1
+    assert "inventaire PARTIEL" in text and "SAUF les packages cassés" in text
 
 
 async def test_combined_and_floor_scope(hass: HomeAssistant, home: Path) -> None:

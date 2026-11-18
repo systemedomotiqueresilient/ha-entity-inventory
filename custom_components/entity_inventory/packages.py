@@ -156,7 +156,7 @@ def async_resolve_packages(
     """Compare chaque package aux registres : entités créées, citées disparues, désactivées.
 
     only_touching : export ciblé, ne garder que les packages qui créent ou citent l'une de
-    ces entités.
+    ces entités, plus tous les packages cassés.
     """
     ent_reg = er.async_get(hass)
     yaml_uids: dict[str, str] = {}
@@ -193,11 +193,17 @@ def async_resolve_packages(
             elif not exists(entity_id):
                 missing.add(entity_id)
 
-        if only_touching is not None and not (defines | raw.cited | raw.keyed) & only_touching:
-            continue
         item: dict[str, Any] = {"file": raw.file}
         if raw.description:
             item["description"] = txt(raw.description)
+        # Export ciblé : les packages qui touchent la cible, et TOUJOURS les packages cassés,
+        # dont les entités disparues ne peuvent plus être rattachées à une pièce.
+        if (
+            only_touching is not None
+            and not missing
+            and not (defines | raw.cited | raw.keyed) & only_touching
+        ):
+            continue
         for key, values in (("defines", defines), ("missing", missing), ("disabled", disabled)):
             if values:
                 item[key] = sorted(values)

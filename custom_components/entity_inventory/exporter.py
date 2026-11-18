@@ -79,8 +79,9 @@ HEADER = """\
 #    n'est pas exporté : pour corriger un package, demande-le à l'occupant.
 #  - meta.scope présent = inventaire PARTIEL (export ciblé sur des pièces, étages, étiquettes
 #    ou domaines). Une entité absente d'ici peut exister ailleurs, et les automatisations ou
-#    packages hors de la cible ne sont pas listés : pour une catégorie entière ("toutes les
-#    piles") ou un risque de conflit, demande l'export complet.
+#    packages hors de la cible ne sont pas listés, SAUF les packages cassés ("missing"),
+#    toujours tous listés. Pour une catégorie entière ("toutes les piles") ou un risque de
+#    conflit, demande l'export complet.
 #  - meta.ha_state: starting = export fait pendant le démarrage : des entités YAML et
 #    quelques valeurs peuvent manquer. Le signaler, et suggérer de refaire l'export.
 #  - "[email]" dans un nom = adresse e-mail masquée (l'entity_id, lui, reste exact).
@@ -527,6 +528,8 @@ def async_build_inventory(
         areas = {k: v for k, v in areas.items() if v.get("devices") or v.get("entities")}
         kept_floors = {v.get("floor") for v in areas.values()}
         floors = {k: v for k, v in floors.items() if k in kept_floors}
+        meta["counts"]["areas"] = len(areas)  # compteurs du fichier, pas de toute l'instance
+        meta["counts"]["floors"] = len(floors)
 
     data: dict[str, Any] = {"meta": _clean(meta)}
     _set(data, "floors", floors)

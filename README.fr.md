@@ -92,7 +92,7 @@ data:
 - Dans un même critère, une valeur suffit (`areas: [wc, couloir]` = l'une ou l'autre) ; entre critères, tous doivent être remplis (`areas` + `domains` = les thermostats de ces pièces).
 - Le résultat va dans un **fichier séparé** nommé d'après la cible (`entity_inventory_salle_de_bain.yaml`) : l'export complet n'est pas modifié.
 - L'en-tête complet est conservé, et `meta.scope` indique à l'IA que l'inventaire est **partiel** : elle sait qu'une entité absente peut exister ailleurs, et qu'il faut l'export complet pour une catégorie entière ou pour repérer un conflit.
-- Seuls les packages qui créent ou citent une entité de la cible sont listés.
+- Les packages qui créent ou citent une entité de la cible sont listés, ainsi que **tous les packages cassés** de l'installation : une sonde disparue ne peut plus être rattachée à une pièce, et un package cassé ne doit pas passer inaperçu dans un extrait.
 - Une pièce, un étage ou une étiquette inconnus sont refusés avec la liste des valeurs possibles, plutôt que de produire un fichier vide.
 - `write: false` n'écrit rien : l'inventaire est seulement renvoyé dans la réponse de l'action, à copier depuis les outils de développement.
 

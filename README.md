@@ -92,7 +92,7 @@ data:
 - Within one criterion, any value matches (`areas: [toilet, hallway]` = either one); across criteria, all must match (`areas` + `domains` = the thermostats of those areas).
 - The result goes to a **separate file** named after the target (`entity_inventory_bathroom.yaml`): the full export is left untouched.
 - The full header is kept, and `meta.scope` tells the AI the inventory is **partial**: it knows a missing entity may exist elsewhere, and that a whole category or a conflict check needs the full export.
-- Only packages that create or cite an entity of the target are listed.
+- Packages that create or cite an entity of the target are listed, plus **every broken package** of the installation: a vanished sensor can no longer be tied to an area, and a broken package must not go unnoticed in an extract.
 - An unknown area, floor or label is refused with the list of valid values, instead of producing an empty file.
 - `write: false` writes nothing: the inventory is only returned in the action response, to copy from the developer tools.
 
