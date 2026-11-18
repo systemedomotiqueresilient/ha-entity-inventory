@@ -47,6 +47,7 @@ Copier `custom_components/entity_inventory/` dans `/config/custom_components/` e
 | Intégrations à exclure | aucune | ex. `proxmoxve`, `sentinel`, `sentinel_report` : aucune de leurs entités n'est exportée |
 | Masquer les adresses e-mail | oui | toute adresse présente dans un nom devient `[email]` |
 | Analyser les packages | oui | liste les fichiers de packages, ce qu'ils créent et ce qu'ils citent qui n'existe plus |
+| Un bouton d'export par pièce | oui | un bouton rangé dans chaque pièce, affiché par les tableaux de bord des pièces |
 | Téléphone à prévenir | aucun | entité `notify.*` (app Compagnon) prévenue quand une action est requise |
 
 Le fichier indique dans `meta.filters` et `meta.counts.excluded` ce qui a été filtré : l'IA sait qu'une entité absente peut exister. Les entités désactivées ne sont jamais listées (seulement comptées).
@@ -58,6 +59,7 @@ Tout se modifie ensuite via *Configurer*.
 ## Utilisation
 
 - le bouton **Exporter l'inventaire** (son état indique la date du dernier export) ;
+- un bouton **Exporter l'inventaire *Pièce*** dans chaque pièce, qui produit l'export ciblé de cette pièce (`entity_inventory_salle_de_bain.yaml`). Il est rangé dans sa pièce : les tableaux de bord automatiques et celui des pièces l'affichent sans carte à ajouter. Les boutons suivent les pièces (création, renommage, suppression) ; un bouton déplacé à la main n'est jamais remis en place de force ;
 - ou l'action `entity_inventory.export`, qui renvoie le chemin et les compteurs.
 
 Export automatique chaque nuit :

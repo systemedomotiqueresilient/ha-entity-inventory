@@ -11,7 +11,8 @@
           "excluded_integrations": "Integrations to exclude",
           "redact_emails": "Hide e-mail addresses",
           "notify_entity": "Phone to notify (optional)",
-          "include_packages": "Analyse packages"
+          "include_packages": "Analyse packages",
+          "area_buttons": "One export button per area"
         },
         "data_description": {
           "output_path": "Path relative to /config or absolute (e.g. /share/entity_inventory.yaml). /config/www is forbidden because it is public.",
@@ -20,7 +21,8 @@
           "excluded_integrations": "Integrations whose entities will not be exported at all (e.g. proxmoxve, sentinel, sentinel_report). Greatly reduces the file size on large installations.",
           "redact_emails": "Replaces any e-mail address found in a name (account title echoed by a monitoring integration, notifier…) with [email]. Entity IDs are left unchanged.",
           "notify_entity": "Notify entity (e.g. notify.my_iphone from the Companion app) alerted when action is required, such as a Watchman repair. Once per situation. A persistent notification is always created.",
-          "include_packages": "Lists each YAML package file (name and first comment line, never its content) with the entities it creates and the entities it cites that no longer exist. The AI can then spot broken packages by itself."
+          "include_packages": "Lists each YAML package file (name and first comment line, never its content) with the entities it creates and the entities it cites that no longer exist. The AI can then spot broken packages by itself.",
+          "area_buttons": "Creates an export button for each area, placed in that area: area dashboards show it without any card to add. The button follows the area (creation, renaming, deletion)."
         }
       }
     },
@@ -46,7 +48,8 @@
           "excluded_integrations": "Integrations to exclude",
           "redact_emails": "Hide e-mail addresses",
           "notify_entity": "Phone to notify (optional)",
-          "include_packages": "Analyse packages"
+          "include_packages": "Analyse packages",
+          "area_buttons": "One export button per area"
         },
         "data_description": {
           "output_path": "Path relative to /config or absolute (e.g. /share/entity_inventory.yaml). /config/www is forbidden because it is public.",
@@ -55,7 +58,8 @@
           "excluded_integrations": "Integrations whose entities will not be exported at all (e.g. proxmoxve, sentinel, sentinel_report). Greatly reduces the file size on large installations.",
           "redact_emails": "Replaces any e-mail address found in a name (account title echoed by a monitoring integration, notifier…) with [email]. Entity IDs are left unchanged.",
           "notify_entity": "Notify entity (e.g. notify.my_iphone from the Companion app) alerted when action is required, such as a Watchman repair. Once per situation. A persistent notification is always created.",
-          "include_packages": "Lists each YAML package file (name and first comment line, never its content) with the entities it creates and the entities it cites that no longer exist. The AI can then spot broken packages by itself."
+          "include_packages": "Lists each YAML package file (name and first comment line, never its content) with the entities it creates and the entities it cites that no longer exist. The AI can then spot broken packages by itself.",
+          "area_buttons": "Creates an export button for each area, placed in that area: area dashboards show it without any card to add. The button follows the area (creation, renaming, deletion)."
         }
       }
     },
@@ -70,6 +74,9 @@
     "button": {
       "export": {
         "name": "Export inventory"
+      },
+      "export_area": {
+        "name": "Export inventory {area}"
       }
     }
   },

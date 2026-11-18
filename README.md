@@ -47,6 +47,7 @@ Copy `custom_components/entity_inventory/` into `/config/custom_components/` and
 | Integrations to exclude | none | e.g. `proxmoxve`, `sentinel`, `sentinel_report`: none of their entities are exported |
 | Hide e-mail addresses | yes | any address found in a name becomes `[email]` |
 | Analyse packages | yes | lists package files, what they create and what they cite that no longer exists |
+| One export button per area | yes | a button placed in each area, shown by area dashboards |
 | Phone to notify | none | `notify.*` entity (Companion app) alerted when action is required |
 
 The file states in `meta.filters` and `meta.counts.excluded` what was filtered out, so the AI knows a missing entity may still exist. Disabled entities are never listed (only counted).
@@ -58,6 +59,7 @@ Everything can be changed later through *Configure*.
 ## Usage
 
 - the **Export inventory** button (its state shows the date of the last export);
+- an **Export inventory *Area*** button in each area, producing the targeted export of that area (`entity_inventory_bathroom.yaml`). It is placed in its area: the automatic dashboards and the areas dashboard show it without any card to add. Buttons follow areas (creation, renaming, deletion); a button you move by hand is never moved back;
 - or the `entity_inventory.export` action, which returns the path and the counters.
 
 Automatic export every night:

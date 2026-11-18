@@ -29,12 +29,14 @@ from .const import (
     CONF_EXCLUDED_INTEGRATIONS,
     CONF_INCLUDE_CONFIG,
     CONF_INCLUDE_DIAGNOSTIC,
+    CONF_AREA_BUTTONS,
     CONF_INCLUDE_PACKAGES,
     CONF_NOTIFY_ENTITY,
     CONF_OUTPUT_PATH,
     CONF_REDACT_EMAILS,
     DEFAULT_INCLUDE_CONFIG,
     DEFAULT_INCLUDE_DIAGNOSTIC,
+    DEFAULT_AREA_BUTTONS,
     DEFAULT_INCLUDE_PACKAGES,
     DEFAULT_OUTPUT_PATH,
     DEFAULT_REDACT_EMAILS,
@@ -49,6 +51,7 @@ DEFAULTS: dict[str, Any] = {
     CONF_EXCLUDED_INTEGRATIONS: [],
     CONF_REDACT_EMAILS: DEFAULT_REDACT_EMAILS,
     CONF_INCLUDE_PACKAGES: DEFAULT_INCLUDE_PACKAGES,
+    CONF_AREA_BUTTONS: DEFAULT_AREA_BUTTONS,
 }
 
 
@@ -84,6 +87,10 @@ def _schema(hass: HomeAssistant, values: dict[str, Any]) -> vol.Schema:
             vol.Required(
                 CONF_INCLUDE_PACKAGES,
                 default=values.get(CONF_INCLUDE_PACKAGES, DEFAULT_INCLUDE_PACKAGES),
+            ): BooleanSelector(),
+            vol.Required(
+                CONF_AREA_BUTTONS,
+                default=values.get(CONF_AREA_BUTTONS, DEFAULT_AREA_BUTTONS),
             ): BooleanSelector(),
             vol.Optional(
                 CONF_NOTIFY_ENTITY,

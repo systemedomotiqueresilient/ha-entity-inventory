@@ -3,6 +3,9 @@
     "button": {
       "export": {
         "default": "mdi:file-export-outline"
+      },
+      "export_area": {
+        "default": "mdi:home-export-outline"
       }
     }
   },

@@ -11,7 +11,8 @@
           "excluded_integrations": "Intégrations à exclure",
           "redact_emails": "Masquer les adresses e-mail",
           "notify_entity": "Téléphone à prévenir (optionnel)",
-          "include_packages": "Analyser les packages"
+          "include_packages": "Analyser les packages",
+          "area_buttons": "Un bouton d'export par pièce"
         },
         "data_description": {
           "output_path": "Chemin relatif à /config ou chemin absolu (ex. /share/entity_inventory.yaml). /config/www est interdit car public.",
@@ -20,7 +21,8 @@
           "excluded_integrations": "Intégrations dont aucune entité ne sera exportée (ex. proxmoxve, sentinel, sentinel_report). Réduit fortement la taille du fichier sur une grosse installation.",
           "redact_emails": "Remplace toute adresse e-mail présente dans un nom (titre de compte repris par une intégration de surveillance, notification…) par [email]. Les entity_id restent inchangés.",
           "notify_entity": "Entité de notification (ex. notify.mon_iphone de l'app Compagnon) prévenue quand une action est requise, par exemple une réparation Watchman. Une seule fois par situation. Une notification persistante est toujours créée.",
-          "include_packages": "Liste chaque fichier de package YAML (nom et première ligne de commentaire, jamais son contenu) avec les entités qu'il crée et celles qu'il cite et qui n'existent plus. L'IA repère ainsi elle-même les packages cassés."
+          "include_packages": "Liste chaque fichier de package YAML (nom et première ligne de commentaire, jamais son contenu) avec les entités qu'il crée et celles qu'il cite et qui n'existent plus. L'IA repère ainsi elle-même les packages cassés.",
+          "area_buttons": "Crée un bouton d'export pour chaque pièce, rangé dans cette pièce : les tableaux de bord des pièces l'affichent sans carte à ajouter. Le bouton suit la pièce (création, renommage, suppression)."
         }
       }
     },
@@ -46,7 +48,8 @@
           "excluded_integrations": "Intégrations à exclure",
           "redact_emails": "Masquer les adresses e-mail",
           "notify_entity": "Téléphone à prévenir (optionnel)",
-          "include_packages": "Analyser les packages"
+          "include_packages": "Analyser les packages",
+          "area_buttons": "Un bouton d'export par pièce"
         },
         "data_description": {
           "output_path": "Chemin relatif à /config ou chemin absolu (ex. /share/entity_inventory.yaml). /config/www est interdit car public.",
@@ -55,7 +58,8 @@
           "excluded_integrations": "Intégrations dont aucune entité ne sera exportée (ex. proxmoxve, sentinel, sentinel_report). Réduit fortement la taille du fichier sur une grosse installation.",
           "redact_emails": "Remplace toute adresse e-mail présente dans un nom (titre de compte repris par une intégration de surveillance, notification…) par [email]. Les entity_id restent inchangés.",
           "notify_entity": "Entité de notification (ex. notify.mon_iphone de l'app Compagnon) prévenue quand une action est requise, par exemple une réparation Watchman. Une seule fois par situation. Une notification persistante est toujours créée.",
-          "include_packages": "Liste chaque fichier de package YAML (nom et première ligne de commentaire, jamais son contenu) avec les entités qu'il crée et celles qu'il cite et qui n'existent plus. L'IA repère ainsi elle-même les packages cassés."
+          "include_packages": "Liste chaque fichier de package YAML (nom et première ligne de commentaire, jamais son contenu) avec les entités qu'il crée et celles qu'il cite et qui n'existent plus. L'IA repère ainsi elle-même les packages cassés.",
+          "area_buttons": "Crée un bouton d'export pour chaque pièce, rangé dans cette pièce : les tableaux de bord des pièces l'affichent sans carte à ajouter. Le bouton suit la pièce (création, renommage, suppression)."
         }
       }
     },
@@ -70,6 +74,9 @@
     "button": {
       "export": {
         "name": "Exporter l'inventaire"
+      },
+      "export_area": {
+        "name": "Exporter l'inventaire {area}"
       }
     }
   },
