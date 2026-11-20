@@ -1,7 +1,12 @@
 {
   "domain": "entity_inventory",
   "name": "Entity Inventory",
-  "codeowners": ["@systemedomotiqueresilient"],
+  "categories": [
+    "computers_network.cloud_developer_tools"
+  ],
+  "codeowners": [
+    "@systemedomotiqueresilient"
+  ],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/systemedomotiqueresilient/ha-entity-inventory",
