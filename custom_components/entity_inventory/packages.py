@@ -28,6 +28,7 @@ _SKIP_KEYS = frozenset({
     "action", "service", "service_template", "platform", "unique_id", "id", "name",
     "alias", "description", "icon", "unit_of_measurement", "device_class", "state_class",
     "friendly_name", "event_type", "mode",
+    "example",  # champs de script : valeur d'exemple, jamais utilisée à l'exécution
 })
 # Domaines dont les clés de premier niveau sont des object_id (input_boolean: {x: …})
 _KEYED_DOMAINS = frozenset({

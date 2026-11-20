@@ -48,13 +48,22 @@ Copy `custom_components/entity_inventory/` into `/config/custom_components/` and
 | Hide e-mail addresses | yes | any address found in a name becomes `[email]` |
 | Analyse packages | yes | lists package files, what they create and what they cite that no longer exists |
 | One export button per area | yes | a button placed in each area, shown by area dashboards |
-| Phone to notify | none | `notify.*` entity (Companion app) alerted when action is required |
+| Admin phone | pre-filled if another SDR integration already has one | `notify.mobile_app_*` service or `notify.*` entity (Companion app) alerted when action is required |
 
 The file states in `meta.filters` and `meta.counts.excluded` what was filtered out, so the AI knows a missing entity may still exist. Disabled entities are never listed (only counted).
 
 Order of magnitude on a real 2,400-entity installation: **470 KB → 170 KB** (≈ 146k → 55k tokens) with the default filters, **≈ 135 KB** (≈ 42k tokens) when monitoring integrations are also excluded. A targeted export of one area fits in a few KB.
 
 Everything can be changed later through *Configure*.
+
+### Admin phone, shared by the SDR integrations
+
+Entity Inventory shares a convention with the other SDR integrations (Sentinel Report, Deferred Restart, Partition Map…): each one creates its own **Admin phone** entity (a diagnostic sensor) showing where it sends its alerts.
+
+- **At installation**, the field is pre-filled with the phone already chosen in another SDR integration. If several different ones exist, they are offered as a choice. If there are none, the Companion app phones are offered.
+- **The value is copied into Entity Inventory.** Removing the integration that suggested it does not lose it, and you can change it at any time through *Configure*.
+- **Read-only**: Entity Inventory reads the other integrations' entity but never writes to it.
+- **Upgrading from 0.8.x**: the "phone to notify" you already set is carried over automatically, nothing to enter again.
 
 ## Usage
 
@@ -74,7 +83,7 @@ automation:
       - action: entity_inventory.export
 ```
 
-If an export fails (folder gone, read-only disk…), a **persistent notification** says so and the phone chosen in the options is notified: otherwise a failed nightly export would go unnoticed and the AI would work on an outdated inventory. The folder is also checked at every startup. One alert per situation; it disappears with the next successful export.
+If an export fails (folder gone, read-only disk…), a **persistent notification** says so and the admin phone is notified: otherwise a failed nightly export would go unnoticed and the AI would work on an outdated inventory. The folder is also checked at every startup. One alert per situation; it disappears with the next successful export.
 
 ### Targeted export
 
@@ -106,7 +115,7 @@ Then, in the conversation with the AI: *"Here is my home inventory. Write a pack
 
 - On HAOS the export goes to `/share` by default: Watchman does not see it.
 - If you choose a path inside `/config` and Watchman is installed, a **repair** appears (*Settings → System → Repairs*). Once confirmed, Entity Inventory adds a pattern to Watchman's ignored files that covers the full export and targeted exports (`entity_inventory*.yaml`). An exception set before 0.7.0 with the exact path is replaced by this pattern through the same repair. If you change the path later, the repair comes back and replaces the old one.
-- So you don't miss it among other repairs, a **persistent notification** (with a link to repairs) is created and, if you chose a **phone to notify** in the options (Companion app `notify.*` entity), it receives a notification. Only once per situation: no reminder at every export or restart.
+- So you don't miss it among other repairs, a **persistent notification** (with a link to repairs) is created and, if you chose an **admin phone** in the options, it receives a notification. Only once per situation: no reminder at every export or restart.
 - Nothing is ever changed in Watchman without this confirmation. If its configuration format is not recognised, nothing is touched and the repair says so.
 - Drafts to validate can also go to `/share/ai/` (`path: /share/ai/draft.yaml`) for the same reason.
 

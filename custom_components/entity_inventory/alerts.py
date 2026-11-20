@@ -1,4 +1,4 @@
-"""Alertes : notification persistante + (option) notification mobile, une fois par situation."""
+"""Alertes : notification persistante + téléphone admin (option), une fois par situation."""
 
 from __future__ import annotations
 
@@ -8,7 +8,8 @@ from homeassistant.components import persistent_notification
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 
-from .const import CONF_NOTIFY_ENTITY, DOMAIN
+from .admin_phone import CONF_ADMIN_NOTIFY_TARGET, async_notify_admin
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -101,20 +102,14 @@ def async_raise(
         hass, message.format(**fields), title, notification_id(entry, key)
     )
 
-    target = entry.options.get(CONF_NOTIFY_ENTITY)
-    if target:
-        if hass.services.has_service("notify", "send_message") and hass.states.get(target):
-            hass.async_create_task(
-                hass.services.async_call(
-                    "notify",
-                    "send_message",
-                    {"entity_id": target, "title": title, "message": short.format(**fields)},
-                    blocking=False,
-                ),
-                f"{DOMAIN} notification mobile",
-            )
-        else:
-            _LOGGER.warning("Notification mobile impossible : %s introuvable", target)
+    if target := entry.data.get(CONF_ADMIN_NOTIFY_TARGET):
+        # Service notify.mobile_app_* ou entité notify : le module commun choisit l'appel.
+        # Un échec est journalisé par le module et ne bloque jamais l'alerte.
+        entry.async_create_task(
+            hass,
+            async_notify_admin(hass, target, title, short.format(**fields)),
+            f"{DOMAIN} notification du téléphone admin",
+        )
 
     alerted[key] = value
     hass.config_entries.async_update_entry(entry, data={**entry.data, DATA_ALERTED: alerted})

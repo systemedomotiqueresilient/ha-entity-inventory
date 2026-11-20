@@ -10,7 +10,7 @@
           "include_diagnostic": "Inclure les entités de diagnostic",
           "excluded_integrations": "Intégrations à exclure",
           "redact_emails": "Masquer les adresses e-mail",
-          "notify_entity": "Téléphone à prévenir (optionnel)",
+          "admin_notify_target": "Téléphone admin (facultatif)",
           "include_packages": "Analyser les packages",
           "area_buttons": "Un bouton d'export par pièce"
         },
@@ -20,7 +20,7 @@
           "include_diagnostic": "Signal, LQI, tension, dernière vue… Les batteries sont toujours conservées, même si cette option est désactivée.",
           "excluded_integrations": "Intégrations dont aucune entité ne sera exportée (ex. proxmoxve, sentinel, sentinel_report). Réduit fortement la taille du fichier sur une grosse installation.",
           "redact_emails": "Remplace toute adresse e-mail présente dans un nom (titre de compte repris par une intégration de surveillance, notification…) par [email]. Les entity_id restent inchangés.",
-          "notify_entity": "Entité de notification (ex. notify.mon_iphone de l'app Compagnon) prévenue quand une action est requise, par exemple une réparation Watchman. Une seule fois par situation. Une notification persistante est toujours créée.",
+          "admin_notify_target": "Destinataire des alertes quand une action est nécessaire (par exemple une réparation Watchman), une fois par situation ; une notification persistante est toujours créée. Service notify.mobile_app_* ou entité notify de l'application Companion. Prérempli avec le téléphone déjà choisi dans une autre intégration SDR (Sentinel Report, Deferred Restart, Partition Map…), s'il y en a un.",
           "include_packages": "Liste chaque fichier de package YAML (nom et première ligne de commentaire, jamais son contenu) avec les entités qu'il crée et celles qu'il cite et qui n'existent plus. L'IA repère ainsi elle-même les packages cassés.",
           "area_buttons": "Crée un bouton d'export pour chaque pièce, rangé dans cette pièce : les tableaux de bord des pièces l'affichent sans carte à ajouter. Le bouton suit la pièce (création, renommage, suppression)."
         }
@@ -30,7 +30,8 @@
       "forbidden_www": "Le dossier /config/www est accessible sans authentification : choisissez un autre emplacement.",
       "dir_missing": "Le dossier de destination n'existe pas. Hors de /config, aucun dossier n'est créé automatiquement : /share n'existe que sur Home Assistant OS et les installations Supervised.",
       "dir_not_writable": "Home Assistant ne peut pas écrire dans le dossier de destination.",
-      "is_dir": "Ce chemin est un dossier : ajoutez un nom de fichier, par exemple entity_inventory.yaml."
+      "is_dir": "Ce chemin est un dossier : ajoutez un nom de fichier, par exemple entity_inventory.yaml.",
+      "invalid_target": "Indiquez un service ou une entité notify, par exemple notify.mobile_app_mon_telephone."
     },
     "abort": {
       "single_instance_allowed": "Entity Inventory est déjà configuré."
@@ -47,7 +48,7 @@
           "include_diagnostic": "Inclure les entités de diagnostic",
           "excluded_integrations": "Intégrations à exclure",
           "redact_emails": "Masquer les adresses e-mail",
-          "notify_entity": "Téléphone à prévenir (optionnel)",
+          "admin_notify_target": "Téléphone admin (facultatif)",
           "include_packages": "Analyser les packages",
           "area_buttons": "Un bouton d'export par pièce"
         },
@@ -57,7 +58,7 @@
           "include_diagnostic": "Signal, LQI, tension, dernière vue… Les batteries sont toujours conservées, même si cette option est désactivée.",
           "excluded_integrations": "Intégrations dont aucune entité ne sera exportée (ex. proxmoxve, sentinel, sentinel_report). Réduit fortement la taille du fichier sur une grosse installation.",
           "redact_emails": "Remplace toute adresse e-mail présente dans un nom (titre de compte repris par une intégration de surveillance, notification…) par [email]. Les entity_id restent inchangés.",
-          "notify_entity": "Entité de notification (ex. notify.mon_iphone de l'app Compagnon) prévenue quand une action est requise, par exemple une réparation Watchman. Une seule fois par situation. Une notification persistante est toujours créée.",
+          "admin_notify_target": "Destinataire des alertes quand une action est nécessaire (par exemple une réparation Watchman), une fois par situation ; une notification persistante est toujours créée. Service notify.mobile_app_* ou entité notify de l'application Companion. Prérempli avec le téléphone déjà choisi dans une autre intégration SDR (Sentinel Report, Deferred Restart, Partition Map…), s'il y en a un.",
           "include_packages": "Liste chaque fichier de package YAML (nom et première ligne de commentaire, jamais son contenu) avec les entités qu'il crée et celles qu'il cite et qui n'existent plus. L'IA repère ainsi elle-même les packages cassés.",
           "area_buttons": "Crée un bouton d'export pour chaque pièce, rangé dans cette pièce : les tableaux de bord des pièces l'affichent sans carte à ajouter. Le bouton suit la pièce (création, renommage, suppression)."
         }
@@ -67,7 +68,8 @@
       "forbidden_www": "Le dossier /config/www est accessible sans authentification : choisissez un autre emplacement.",
       "dir_missing": "Le dossier de destination n'existe pas. Hors de /config, aucun dossier n'est créé automatiquement : /share n'existe que sur Home Assistant OS et les installations Supervised.",
       "dir_not_writable": "Home Assistant ne peut pas écrire dans le dossier de destination.",
-      "is_dir": "Ce chemin est un dossier : ajoutez un nom de fichier, par exemple entity_inventory.yaml."
+      "is_dir": "Ce chemin est un dossier : ajoutez un nom de fichier, par exemple entity_inventory.yaml.",
+      "invalid_target": "Indiquez un service ou une entité notify, par exemple notify.mobile_app_mon_telephone."
     }
   },
   "entity": {
@@ -77,6 +79,11 @@
       },
       "export_area": {
         "name": "Exporter l'inventaire {area}"
+      }
+    },
+    "sensor": {
+      "admin_phone": {
+        "name": "Téléphone admin"
       }
     }
   },

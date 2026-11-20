@@ -122,6 +122,7 @@ async def test_button_failure_raises(hass: HomeAssistant, tmp_path: Path) -> Non
     button = next(
         e.entity_id
         for e in er.async_entries_for_config_entry(er.async_get(hass), entry.entry_id)
+        if e.domain == "button"  # 0.9.0 : l'entrée a aussi un capteur « Téléphone admin »
     )
     with pytest.raises(HomeAssistantError):
         await hass.services.async_call("button", "press", {"entity_id": button}, blocking=True)

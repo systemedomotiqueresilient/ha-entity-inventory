@@ -48,13 +48,22 @@ Copier `custom_components/entity_inventory/` dans `/config/custom_components/` e
 | Masquer les adresses e-mail | oui | toute adresse présente dans un nom devient `[email]` |
 | Analyser les packages | oui | liste les fichiers de packages, ce qu'ils créent et ce qu'ils citent qui n'existe plus |
 | Un bouton d'export par pièce | oui | un bouton rangé dans chaque pièce, affiché par les tableaux de bord des pièces |
-| Téléphone à prévenir | aucun | entité `notify.*` (app Compagnon) prévenue quand une action est requise |
+| Téléphone admin | prérempli si une autre intégration SDR en a déjà un | service `notify.mobile_app_*` ou entité `notify.*` (app Compagnon) prévenu quand une action est requise |
 
 Le fichier indique dans `meta.filters` et `meta.counts.excluded` ce qui a été filtré : l'IA sait qu'une entité absente peut exister. Les entités désactivées ne sont jamais listées (seulement comptées).
 
 Ordre de grandeur sur une installation réelle de 2 400 entités : **470 Ko → 170 Ko** (≈ 146k → 55k tokens) avec les filtres par défaut, **≈ 135 Ko** (≈ 42k tokens) en excluant en plus les intégrations de surveillance. Un export ciblé sur une pièce tient en quelques Ko.
 
 Tout se modifie ensuite via *Configurer*.
+
+### Téléphone admin, commun aux intégrations SDR
+
+Entity Inventory partage une convention avec les autres intégrations SDR (Sentinel Report, Deferred Restart, Partition Map…) : chacune crée sa propre entité **Téléphone admin** (capteur de diagnostic) qui indique où elle envoie ses alertes.
+
+- **À l'installation**, le champ est prérempli avec le téléphone déjà choisi dans une autre intégration SDR. S'il y en a plusieurs différents, ils sont proposés au choix. S'il n'y en a aucun, ce sont les téléphones de l'application Companion qui sont proposés.
+- **La valeur est copiée dans Entity Inventory.** Supprimer l'intégration qui l'avait proposée ne la fait pas perdre, et vous pouvez la changer à tout moment via *Configurer*.
+- **Lecture seule** : Entity Inventory lit l'entité des autres intégrations, mais n'y écrit jamais.
+- **Mise à jour depuis la 0.8.x** : le « téléphone à prévenir » déjà réglé est repris automatiquement, sans rien ressaisir.
 
 ## Utilisation
 
@@ -74,7 +83,7 @@ automation:
       - action: entity_inventory.export
 ```
 
-Si un export échoue (dossier disparu, disque en lecture seule…), une **notification persistante** l'indique, et le téléphone choisi dans les options est prévenu : sans cela, un export nocturne raté passerait inaperçu et l'IA travaillerait sur un inventaire périmé. Le dossier est aussi contrôlé à chaque démarrage. Une seule alerte par situation ; elle disparaît au premier export réussi.
+Si un export échoue (dossier disparu, disque en lecture seule…), une **notification persistante** l'indique, et le téléphone admin est prévenu : sans cela, un export nocturne raté passerait inaperçu et l'IA travaillerait sur un inventaire périmé. Le dossier est aussi contrôlé à chaque démarrage. Une seule alerte par situation ; elle disparaît au premier export réussi.
 
 ### Export ciblé
 
@@ -106,7 +115,7 @@ Puis, dans la conversation avec l'IA : *« Voici l'inventaire de ma maison. Écr
 
 - Par défaut sur HAOS, l'export va dans `/share` : Watchman ne le voit pas.
 - Si vous choisissez un chemin dans `/config` et que Watchman est installé, une **réparation** apparaît (*Paramètres → Système → Réparations*). Après confirmation, Entity Inventory ajoute aux fichiers ignorés de Watchman un motif qui couvre l'export complet et les exports ciblés (`entity_inventory*.yaml`). Une exception posée avant la 0.7.0 avec le chemin exact est remplacée par ce motif via la même réparation. Si vous changez le chemin plus tard, la réparation revient et remplace l'ancien chemin.
-- Pour ne pas la manquer parmi d'autres réparations, une **notification persistante** (avec un lien vers les réparations) est créée, et, si vous avez choisi un **téléphone à prévenir** dans les options (entité `notify.*` de l'app Compagnon), il reçoit une notification. Une seule fois par situation : pas de relance à chaque export ou redémarrage.
+- Pour ne pas la manquer parmi d'autres réparations, une **notification persistante** (avec un lien vers les réparations) est créée, et, si vous avez choisi un **téléphone admin** dans les options, il reçoit une notification. Une seule fois par situation : pas de relance à chaque export ou redémarrage.
 - Rien n'est jamais modifié dans Watchman sans cette confirmation. Si son format de configuration n'est pas reconnu, rien n'est touché et la réparation l'indique.
 - Les brouillons à valider peuvent aussi aller dans `/share/ia/` (`path: /share/ia/brouillon.yaml`) pour la même raison.
 

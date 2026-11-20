@@ -25,15 +25,23 @@ from homeassistant.helpers import (
 from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
 
+from .admin_phone import CONF_ADMIN_NOTIFY_TARGET, normalize_target
 from .alerts import notification_id
-from .const import ATTR_PATH, ATTR_YAML, DOMAIN, SERVICE_EXPORT, SERVICE_VALIDATE
+from .const import (
+    ATTR_PATH,
+    ATTR_YAML,
+    DOMAIN,
+    LEGACY_CONF_NOTIFY_ENTITY,
+    SERVICE_EXPORT,
+    SERVICE_VALIDATE,
+)
 from .exporter import resolve_output_path
 from .runner import ALERT_EXPORT, async_check_destination, async_run_export
 from .validator import async_validate_yaml, read_draft, resolve_draft_path
 from .watchman import async_check as async_check_watchman
 from .watchman import issue_id as watchman_issue_id
 
-PLATFORMS: list[Platform] = [Platform.BUTTON]
+PLATFORMS: list[Platform] = [Platform.BUTTON, Platform.SENSOR]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -126,8 +134,32 @@ def _check_scope(hass: HomeAssistant, scope: dict[str, list[str]]) -> None:
             )
 
 
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migre les entrées existantes, sans perte.
+
+    1.1 → 1.2 : l'option « notify_entity » (≤ 0.8.x, une entité notify) devient
+    entry.data["admin_notify_target"] (convention admin_phone). La valeur est
+    reprise telle quelle : admin_phone ≥ 1.1.0 accepte les entités notify.
+    """
+    if entry.version > 1:
+        return False  # entrée créée par une version plus récente
+    if entry.minor_version < 2:
+        options = dict(entry.options)
+        legacy = options.pop(LEGACY_CONF_NOTIFY_ENTITY, None)
+        target = normalize_target(entry.data.get(CONF_ADMIN_NOTIFY_TARGET)) or normalize_target(
+            legacy
+        )
+        hass.config_entries.async_update_entry(
+            entry,
+            data={**entry.data, CONF_ADMIN_NOTIFY_TARGET: target},
+            options=options,
+            minor_version=2,
+        )
+    return True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Met en place le bouton d'export."""
+    """Met en place les boutons d'export et le capteur « Téléphone admin »."""
     entry.runtime_data = dict(entry.options)  # pour ne recharger qu'au changement d'options
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_reload))

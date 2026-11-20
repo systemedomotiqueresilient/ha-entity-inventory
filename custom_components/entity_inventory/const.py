@@ -1,6 +1,7 @@
 """Constantes de l'intégration Entity Inventory."""
 
 DOMAIN = "entity_inventory"
+VERSION = "0.9.0"  # identique à manifest.json et au fichier VERSION
 
 CONF_OUTPUT_PATH = "output_path"
 DEFAULT_OUTPUT_PATH = "entity_inventory.yaml"  # relatif au dossier /config (hors HAOS)
@@ -16,7 +17,8 @@ CONF_INCLUDE_CONFIG = "include_config"
 CONF_INCLUDE_DIAGNOSTIC = "include_diagnostic"
 CONF_EXCLUDED_INTEGRATIONS = "excluded_integrations"
 CONF_REDACT_EMAILS = "redact_emails"
-CONF_NOTIFY_ENTITY = "notify_entity"
+# Ancienne option (≤ 0.8.x) : téléphone à notifier, migrée vers entry.data[admin_notify_target]
+LEGACY_CONF_NOTIFY_ENTITY = "notify_entity"
 CONF_INCLUDE_PACKAGES = "include_packages"
 CONF_AREA_BUTTONS = "area_buttons"
 DEFAULT_INCLUDE_CONFIG = False
