@@ -5,11 +5,9 @@ from __future__ import annotations
 from collections.abc import Mapping
 from enum import Enum
 import os
-import re
 from pathlib import Path
+import re
 from typing import Any
-
-import yaml
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import __version__ as HA_VERSION
@@ -26,6 +24,7 @@ from homeassistant.helpers.hassio import is_hassio
 from homeassistant.loader import async_get_integration
 from homeassistant.util import dt as dt_util, slugify
 from homeassistant.util.file import write_utf8_file_atomic
+import yaml
 
 from .const import (
     ALWAYS_KEEP_DEVICE_CLASSES,
@@ -91,7 +90,8 @@ HEADER = """\
 #  - Les valeurs (preset_modes, options, hvac_modes…) sont exactes : casse et espaces comptent.
 #  - Syntaxe actuelle de Home Assistant : "triggers:" / "- trigger: state",
 #    "conditions:", "actions:" / "- action: domaine.service" (pas "platform:" ni "service:").
-#  - Si plusieurs entités conviennent (ex. deux thermostats pour un même radiateur), demande laquelle.
+#  - Si plusieurs entités conviennent (ex. deux thermostats pour un même radiateur),
+#    demande laquelle.
 #  - Les automatisations, scripts et scènes existants sont listés : signale ceux qui agissent
 #    déjà sur les mêmes entités (risque de conflit) et, si utile, mémorise puis restaure l'état
 #    avec scene.create plutôt que d'imposer une valeur fixe.
@@ -260,7 +260,7 @@ def async_build_inventory(
     hass: HomeAssistant,
     options: Mapping[str, Any] | None = None,
     version: str | None = None,
-    raw_packages: list[RawPackage] | None | bool = False,
+    raw_packages: list[RawPackage] | bool | None = False,
     scope: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Construit l'inventaire (à appeler dans la boucle d'événements).
@@ -301,10 +301,11 @@ def async_build_inventory(
     scope_domains = set(scope.get("domains", ()))
 
     def _in_scope(entry: er.RegistryEntry, device: dr.DeviceEntry | None) -> bool:
-        if scope_areas is not None:
-            if (entry.area_id or (device.area_id if device else None)) not in scope_areas:
-                return False
-        if scope_labels and not scope_labels & (set(entry.labels) | set(device.labels if device else ())):
+        area_id = entry.area_id or (device.area_id if device else None)
+        if scope_areas is not None and area_id not in scope_areas:
+            return False
+        labels = set(entry.labels) | set(device.labels if device else ())
+        if scope_labels and not scope_labels & labels:
             return False
         return not scope_domains or entry.domain in scope_domains
 
@@ -322,7 +323,7 @@ def async_build_inventory(
 
     labels = {
         label.label_id: _txt(label.name)
-        for label in sorted(label_reg.async_list_labels(), key=lambda l: l.name.casefold())
+        for label in sorted(label_reg.async_list_labels(), key=lambda lab: lab.name.casefold())
     }
 
     # --- Pièces (triées par niveau d'étage puis par nom) ----------------- #
@@ -524,7 +525,9 @@ def async_build_inventory(
                     stack.extend(current)
         packages = async_resolve_packages(hass, raw_packages, _txt, exported)
         meta["counts"]["packages"] = len(packages)
-        meta["counts"]["packages_with_missing"] = sum(1 for p in packages.values() if "missing" in p)
+        meta["counts"]["packages_with_missing"] = sum(
+            1 for p in packages.values() if "missing" in p
+        )
 
     if scope:  # ne garder que les pièces et étages concernés
         areas = {k: v for k, v in areas.items() if v.get("devices") or v.get("entities")}
@@ -578,7 +581,9 @@ def dump_inventory(data: dict[str, Any]) -> str:
 # --------------------------------------------------------------------------- #
 def scoped_path(path: Path, scope: Mapping[str, Any]) -> Path:
     """entity_inventory.yaml + {areas: [salle_de_bain]} → entity_inventory_salle_de_bain.yaml"""
-    parts = [str(v) for key in ("floors", "areas", "labels", "domains") for v in scope.get(key) or ()]
+    parts = [
+        str(v) for key in ("floors", "areas", "labels", "domains") for v in scope.get(key) or ()
+    ]
     suffix = slugify("_".join(parts))[:60].strip("_") or "cible"
     return path.with_name(f"{path.stem}_{suffix}{path.suffix}")
 
@@ -597,7 +602,7 @@ async def async_export(
         )
 
     integration = await async_get_integration(hass, DOMAIN)
-    raw_packages: list[RawPackage] | None | bool = False
+    raw_packages: list[RawPackage] | bool | None = False
     if (options or {}).get(CONF_INCLUDE_PACKAGES, DEFAULT_INCLUDE_PACKAGES):
         raw_packages = await hass.async_add_executor_job(scan_packages, hass.config.config_dir)
     data = async_build_inventory(hass, options, str(integration.version), raw_packages, scope)

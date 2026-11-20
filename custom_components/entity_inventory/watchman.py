@@ -108,7 +108,9 @@ def async_add_exception(hass: HomeAssistant, entry: ConfigEntry, path: Path) -> 
         return False
     current = _read_ignored(watchman)
     if current is None:
-        _LOGGER.warning("Format des fichiers ignorés de Watchman non reconnu : rien n'a été modifié")
+        _LOGGER.warning(
+            "Format des fichiers ignorés de Watchman non reconnu : rien n'a été modifié"
+        )
         return False
     location, patterns, as_text = current
 

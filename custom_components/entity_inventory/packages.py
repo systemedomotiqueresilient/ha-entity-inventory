@@ -88,7 +88,7 @@ def _description(path: str) -> str | None:
     """Première ligne de commentaire qui contient du texte (les lignes « # ==== » sont sautées)."""
     try:
         with open(path, encoding="utf-8") as handle:
-            for _, line in zip(range(40), handle):
+            for _, line in zip(range(40), handle, strict=False):
                 match = _COMMENT_RE.match(line)
                 if match is None:
                     if line.strip():

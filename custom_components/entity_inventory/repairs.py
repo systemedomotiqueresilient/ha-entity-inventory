@@ -5,11 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import voluptuous as vol
-
 from homeassistant.components.repairs import RepairsFlow
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
+import voluptuous as vol
 
 from .watchman import async_add_exception
 

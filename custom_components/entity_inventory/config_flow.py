@@ -6,8 +6,6 @@ import os
 from pathlib import Path
 from typing import Any
 
-import voluptuous as vol
-
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -22,6 +20,7 @@ from homeassistant.helpers.selector import (
     SelectSelectorMode,
     TextSelector,
 )
+import voluptuous as vol
 
 from .admin_phone import (
     CONF_ADMIN_NOTIFY_TARGET,

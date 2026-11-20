@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import voluptuous as vol
-
 from homeassistant.components import persistent_notification
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import Platform
@@ -24,6 +22,7 @@ from homeassistant.helpers import (
 )
 from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType
+import voluptuous as vol
 
 from .admin_phone import CONF_ADMIN_NOTIFY_TARGET, normalize_target
 from .alerts import notification_id
@@ -38,8 +37,7 @@ from .const import (
 from .exporter import resolve_output_path
 from .runner import ALERT_EXPORT, async_check_destination, async_run_export
 from .validator import async_validate_yaml, read_draft, resolve_draft_path
-from .watchman import async_check as async_check_watchman
-from .watchman import issue_id as watchman_issue_id
+from .watchman import async_check as async_check_watchman, issue_id as watchman_issue_id
 
 PLATFORMS: list[Platform] = [Platform.BUTTON, Platform.SENSOR]
 
@@ -123,7 +121,7 @@ def _check_scope(hass: HomeAssistant, scope: dict[str, list[str]]) -> None:
     known = {
         "areas": {a.id for a in ar.async_get(hass).async_list_areas()},
         "floors": {f.floor_id for f in fr.async_get(hass).async_list_floors()},
-        "labels": {l.label_id for l in lr.async_get(hass).async_list_labels()},
+        "labels": {lab.label_id for lab in lr.async_get(hass).async_list_labels()},
     }
     for key, valid in known.items():
         unknown = sorted(set(scope.get(key, ())) - valid)

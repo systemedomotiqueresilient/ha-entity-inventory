@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+import os
 import re
 from typing import Any
-
-import yaml
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import entity_registry as er
-import os
+import yaml
 
 ENTITY_RE = re.compile(r"^[a-z0-9_]+\.[a-z0-9_]+$")
 TEMPLATE_REFS = (
@@ -36,6 +35,8 @@ VALUE_CHECKS: dict[tuple[str, str], tuple[str, str]] = {
     ("media_player", "select_source"): ("source", "source_list"),
 }
 NON_NUMERIC_DOMAINS = {"group", "binary_sensor", "switch", "light", "input_boolean"}
+# Domaines dont les actions s'appliquent légitimement à des entités d'autres domaines
+_CROSS_DOMAIN = frozenset({"homeassistant", "notify", "persistent_notification"})
 
 
 def resolve_draft_path(hass: HomeAssistant, raw: str) -> str:
@@ -187,7 +188,11 @@ def async_validate_yaml(hass: HomeAssistant, text: str) -> dict[str, Any]:
                 legacy.add("« service: » → « action: »")
             if isinstance(node.get("platform"), str) and "trigger" not in node:
                 legacy.add("« platform: » dans un déclencheur → « trigger: »")
-            for old, new in (("trigger", "triggers"), ("condition", "conditions"), ("action", "actions")):
+            for old, new in (
+                ("trigger", "triggers"),
+                ("condition", "conditions"),
+                ("action", "actions"),
+            ):
                 if isinstance(node.get(old), list):
                     legacy.add(f"« {old}: » (liste) → « {new}: »")
 
@@ -198,7 +203,8 @@ def async_validate_yaml(hass: HomeAssistant, text: str) -> dict[str, Any]:
 
             # Appels d'action
             service = node.get("action") if isinstance(node.get("action"), str) else None
-            service = service or (node.get("service") if isinstance(node.get("service"), str) else None)
+            if not service and isinstance(node.get("service"), str):
+                service = node.get("service")
             if service and not _is_template(service) and "." in service:
                 domain, name = service.split(".", 1)
                 if domain == "entity_inventory" and name == "validate":
@@ -228,7 +234,10 @@ def async_validate_yaml(hass: HomeAssistant, text: str) -> dict[str, Any]:
                             if hass.services.has_service("notify", f"mobile_app_{name}"):
                                 hint += f", ou l'ancienne action « notify.mobile_app_{name} »"
                         else:
-                            hint = "une action s'écrit domaine.service (ex. switch.turn_on) avec cette entité en target"
+                            hint = (
+                                "une action s'écrit domaine.service (ex. switch.turn_on) "
+                                "avec cette entité en target"
+                            )
                         errors.append(
                             f"{where} : « {service} » est une entité, pas une action — {hint}"
                         )
@@ -243,8 +252,10 @@ def async_validate_yaml(hass: HomeAssistant, text: str) -> dict[str, Any]:
                 ]
                 for entity_id in targets:
                     check_entity(entity_id, where)
-                    if entity_id.split(".", 1)[0] != domain and domain not in ("homeassistant", "notify", "persistent_notification"):
-                        warnings.append(f"{where} : « {service} » appliquée à « {entity_id} » (autre domaine)")
+                    if entity_id.split(".", 1)[0] != domain and domain not in _CROSS_DOMAIN:
+                        warnings.append(
+                            f"{where} : « {service} » appliquée à « {entity_id} » (autre domaine)"
+                        )
                 rule = VALUE_CHECKS.get((domain, name))
                 if rule and rule[0] in data and not _is_template(data[rule[0]]):
                     key, attribute = rule
@@ -266,8 +277,12 @@ def async_validate_yaml(hass: HomeAssistant, text: str) -> dict[str, Any]:
                             )
 
             # numeric_state sur une entité non numérique
-            if "numeric_state" in (node.get("trigger"), node.get("platform"), node.get("condition")) \
-                    and "attribute" not in node and "value_template" not in node:
+            kinds = (node.get("trigger"), node.get("platform"), node.get("condition"))
+            if (
+                "numeric_state" in kinds
+                and "attribute" not in node
+                and "value_template" not in node
+            ):
                 for entity_id in _entity_ids(node.get("entity_id")):
                     state = hass.states.get(entity_id)
                     numeric = False
@@ -286,7 +301,10 @@ def async_validate_yaml(hass: HomeAssistant, text: str) -> dict[str, Any]:
 
     warnings.extend(f"Syntaxe ancienne : {item}" for item in sorted(legacy))
     if not documents:
-        errors.append("Rien à vérifier : le texte ou le fichier est vide (ou ne contient que des commentaires).")
+        errors.append(
+            "Rien à vérifier : le texte ou le fichier est vide "
+            "(ou ne contient que des commentaires)."
+        )
     elif not checked and not actions_checked and not errors:
         errors.append(
             "Rien à vérifier : aucune entité ni action trouvée. Le YAML de l'IA est-il bien "

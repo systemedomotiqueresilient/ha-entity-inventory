@@ -7,6 +7,7 @@ Les boutons suivent les pièces (création, renommage, suppression).
 
 from __future__ import annotations
 
+import contextlib
 from typing import Any
 
 from homeassistant.components.button import ButtonEntity
@@ -81,7 +82,11 @@ async def async_setup_entry(
             if button.entity_id and ent_reg.async_get(button.entity_id):
                 ent_reg.async_remove(button.entity_id)
             _forget(area_id)
-        elif action == "update" and area_id in buttons and (area := area_reg.async_get_area(area_id)):
+        elif (
+            action == "update"
+            and area_id in buttons
+            and (area := area_reg.async_get_area(area_id))
+        ):
             buttons[area_id].async_rename(area.name)
 
     entry.async_on_unload(hass.bus.async_listen(ar.EVENT_AREA_REGISTRY_UPDATED, _area_changed))
@@ -134,10 +139,9 @@ class AreaExportButton(ButtonEntity):
     @callback
     def async_rename(self, name: str) -> None:
         self._attr_translation_placeholders = {"area": name}
-        try:  # le nom traduit est mis en cache par Home Assistant : l'invalider
+        # le nom traduit est mis en cache par Home Assistant : l'invalider
+        with contextlib.suppress(AttributeError):
             del self.name
-        except AttributeError:
-            pass
         if self.hass:
             self.async_write_ha_state()
 
