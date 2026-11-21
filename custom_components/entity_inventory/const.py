@@ -1,7 +1,7 @@
 """Constantes de l'intégration Entity Inventory."""
 
 DOMAIN = "entity_inventory"
-VERSION = "0.9.0"  # identique à manifest.json et au fichier VERSION
+VERSION = "0.9.1"  # identique à manifest.json et au fichier VERSION
 
 CONF_OUTPUT_PATH = "output_path"
 DEFAULT_OUTPUT_PATH = "entity_inventory.yaml"  # relatif au dossier /config (hors HAOS)
