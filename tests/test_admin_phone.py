@@ -103,6 +103,7 @@ async def test_one_found_is_prefilled(hass: HomeAssistant, tmp_path: Path) -> No
     state = hass.states.get(_sensor_id(hass, entry))
     assert state.state == MOBILE
     assert state.attributes[ATTR_NOTIFY_SERVICE] == MOBILE
+    assert state.attributes["admin_phone_convention"] == 1
 
 
 async def test_several_values_give_a_choice(hass: HomeAssistant) -> None:
@@ -297,9 +298,9 @@ def test_module_copy_and_versions() -> None:
 
     root = Path(__file__).parents[1]
     module = root / "custom_components" / DOMAIN / "admin_phone.py"
-    assert admin_phone.MODULE_VERSION == "1.2.0"
+    assert admin_phone.MODULE_VERSION == "1.3.0"
     assert hashlib.sha256(module.read_bytes()).hexdigest() == (
-        "1d720150ff1c709547018236afcb1c555e630c504be0c34b20fe0b79ed80545b"
+        "38f74609b319ceb0c56395ff13454d8bbdc72246b1dc02bcf6ad4babf768ddf8"
     )
     manifest = json.loads((root / "custom_components" / DOMAIN / "manifest.json").read_text())
     assert manifest["version"] == VERSION == (root / "VERSION").read_text().strip()
