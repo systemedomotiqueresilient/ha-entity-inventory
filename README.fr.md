@@ -67,6 +67,17 @@ Entity Inventory partage une convention avec les autres intégrations SDR (Senti
 
 ## Utilisation
 
+### Le panneau « Entity Inventory » (0.10.0, le plus simple)
+
+Dans la barre latérale, pour les administrateurs. Aucun besoin de Samba :
+1. **Générer** : l'inventaire complet, ou ciblé en choisissant des étages, pièces, étiquettes ou domaines.
+2. **Télécharger** le fichier, puis le joindre à la conversation avec l'IA. Ça marche aussi depuis l'application Companion.
+3. Ou **Copier** l'inventaire et le coller dans la conversation. Au-delà de 150 Ko, le panneau prévient : certaines IA refusent un collage aussi long, joindre le fichier est alors préférable.
+
+Les packages cassés (qui citent des entités disparues) sont signalés dès la génération. Le fichier est écrit au même endroit que par les boutons ci-dessous.
+
+### Boutons et action
+
 - le bouton **Exporter l'inventaire** (son état indique la date du dernier export) ;
 - un bouton **Exporter l'inventaire *Pièce*** dans chaque pièce, qui produit l'export ciblé de cette pièce (`entity_inventory_salle_de_bain.yaml`). Il est rangé dans sa pièce : les tableaux de bord automatiques et celui des pièces l'affichent sans carte à ajouter. Les boutons suivent les pièces (création, renommage, suppression) ; un bouton déplacé à la main n'est jamais remis en place de force ;
 - ou l'action `entity_inventory.export`, qui renvoie le chemin et les compteurs.

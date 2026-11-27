@@ -607,12 +607,20 @@ async def async_export(
         raw_packages = await hass.async_add_executor_job(scan_packages, hass.config.config_dir)
     data = async_build_inventory(hass, options, str(integration.version), raw_packages, scope)
 
+    # Packages cassés (0.10.0) : nom → entités citées qui n'existent plus, pour le panneau
+    broken = {
+        name: list(info["missing"])
+        for name, info in (data.get("packages") or {}).items()
+        if isinstance(info, dict) and info.get("missing")
+    }
+
     if not write:
         content = dump_inventory(data)
         return {
             "yaml": content,
             "size_bytes": len(content.encode("utf-8")),
             **data["meta"]["counts"],
+            "broken_packages": broken,
         }
 
     def _write() -> int:
@@ -626,4 +634,9 @@ async def async_export(
     except OSError as err:
         raise HomeAssistantError(f"Impossible d'écrire {path} : {err}") from err
 
-    return {"path": str(path), "size_bytes": size, **data["meta"]["counts"]}
+    return {
+        "path": str(path),
+        "size_bytes": size,
+        **data["meta"]["counts"],
+        "broken_packages": broken,
+    }

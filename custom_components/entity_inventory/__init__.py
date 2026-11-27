@@ -35,6 +35,7 @@ from .const import (
     SERVICE_VALIDATE,
 )
 from .exporter import resolve_output_path
+from .panel import async_register_api, async_register_panel, async_remove_panel
 from .runner import ALERT_EXPORT, async_check_destination, async_run_export
 from .validator import async_validate_yaml, read_draft, resolve_draft_path
 from .watchman import async_check as async_check_watchman, issue_id as watchman_issue_id
@@ -45,7 +46,8 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Enregistre le service entity_inventory.export."""
+    """Enregistre les actions export et validate, et l'API du panneau (0.10.0)."""
+    async_register_api(hass)
 
     async def _handle_export(call: ServiceCall) -> ServiceResponse:
         entries = [
@@ -161,6 +163,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.runtime_data = dict(entry.options)  # pour ne recharger qu'au changement d'options
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_reload))
+    await async_register_panel(hass)
 
     @callback
     def _check_at_start(_hass: HomeAssistant) -> None:
@@ -176,6 +179,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Décharge l'intégration."""
+    async_remove_panel(hass)
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 

@@ -4,6 +4,7 @@ Intégration Home Assistant (domaine `entity_inventory`). Elle exporte la struct
 
 ## Règles
 - **Lecture seule** : on n'écrit jamais dans la configuration de l'occupant, dans une autre intégration ni dans l'entité d'une autre intégration. L'écriture de packages relève de Package Keeper, une intégration séparée.
+- **Panneau (0.10.0)** : réservé aux administrateurs (`require_admin` pour le panneau et chaque commande WebSocket). Le téléchargement passe par une adresse signée et ne sert QUE les fichiers d'inventaire du dossier de l'export ; tout texte venant du serveur est inséré avec `textContent`. La version doit aussi être identique dans `PANEL_VERSION` (`frontend/entity-inventory-panel.js`).
 - **Jamais de contenu de package ni de valeur `!secret` dans l'export.** Les adresses e-mail sont masquées par défaut.
 - **Aucune donnée personnelle dans le dépôt public**, ni dans les README, les tests ou les messages de commit : pas d'e-mail, de nom d'appareil réel, d'IP ni de coordonnées. Les commits utilisent l'adresse GitHub noreply.
 - **Ne jamais modifier le code de Sentinel ni de Spook.**
@@ -22,7 +23,7 @@ Intégration Home Assistant (domaine `entity_inventory`). Elle exporte la struct
   - envoi par `async_notify_admin`.
 
 ## Versions
-La version doit être identique dans `manifest.json`, `const.py` (`VERSION`) et le fichier `VERSION`. Un test le vérifie. Il faut aussi tenir à jour `CHANGELOG.md` et `ROADMAP.md`.
+La version doit être identique dans `manifest.json`, `const.py` (`VERSION`), le fichier `VERSION` et `PANEL_VERSION` du panneau. Un test le vérifie. Il faut aussi tenir à jour `CHANGELOG.md` et `ROADMAP.md`.
 
 ## Vérifications avant de livrer
 ```bash

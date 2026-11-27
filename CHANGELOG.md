@@ -2,6 +2,23 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions selon [SemVer](https://semver.org/lang/fr/). Les versions antérieures à la 0.9.0 sont résumées d'après l'historique git.
 
+## [0.10.0] - 2026-11-27
+
+### Ajouté
+- **Panneau latéral « Entity Inventory »**, réservé aux administrateurs, pour s'en servir sans Samba :
+  - **Générer** l'inventaire complet, ou ciblé par étage, pièce, étiquette ou domaine, choisis dans des listes. Le fichier est écrit au même endroit que par le bouton et l'action `entity_inventory.export`.
+  - **Télécharger** depuis le navigateur ou l'application Companion, par une adresse signée valable 5 minutes et liée à la session de l'administrateur.
+  - **Copier** dans le presse-papiers, avec un avertissement au-delà de 150 Ko (certaines IA refusent un collage aussi long : joindre le fichier est alors préférable). Repli automatique quand le presse-papiers moderne n'est pas disponible (accès en http local).
+  - **Packages cassés** signalés en tête du résultat, avec un lien vers Package Keeper s'il est installé.
+  - Liste des fichiers d'inventaire déjà présents, avec Télécharger et Copier.
+  - Rechargement automatique du panneau après une mise à jour, comme Package Keeper.
+- Réponse de l'action `export` : nouvelle clé `broken_packages` (nom du package → entités citées qui n'existent plus).
+
+### Sécurité
+- Commandes WebSocket `entity_inventory/overview` et `entity_inventory/generate` réservées aux administrateurs.
+- La vue de téléchargement ne sert que les fichiers d'inventaire (`<nom de l'export>[_cible].yaml`, dans le dossier de l'export, sans lien symbolique) et vérifie que l'utilisateur est administrateur.
+- Dépendances ajoutées au manifest : `http`, `websocket_api` (déjà chargées par Home Assistant) ; après : `frontend`, `panel_custom`.
+
 ## [0.9.2] - 2026-11-24
 
 ### Modifié

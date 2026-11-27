@@ -67,6 +67,17 @@ Entity Inventory shares a convention with the other SDR integrations (Sentinel R
 
 ## Usage
 
+### The “Entity Inventory” panel (0.10.0, the simplest way)
+
+In the sidebar, for administrators. No need for Samba:
+1. **Generate**: the full inventory, or a targeted one by picking floors, areas, labels or domains.
+2. **Download** the file, then attach it to your conversation with the AI. This also works from the Companion app.
+3. Or **Copy** the inventory and paste it into the conversation. Above 150 KB the panel warns you: some AIs refuse such a long paste, attaching the file is then better.
+
+Broken packages (citing entities that no longer exist) are reported as soon as the inventory is generated. The file is written to the same place as with the buttons below.
+
+### Buttons and action
+
 - the **Export inventory** button (its state shows the date of the last export);
 - an **Export inventory *Area*** button in each area, producing the targeted export of that area (`entity_inventory_bathroom.yaml`). It is placed in its area: the automatic dashboards and the areas dashboard show it without any card to add. Buttons follow areas (creation, renaming, deletion); a button you move by hand is never moved back;
 - or the `entity_inventory.export` action, which returns the path and the counters.
